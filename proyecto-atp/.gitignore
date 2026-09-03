@@ -1,0 +1,8 @@
+# Los datos se regeneran corriendo `python pipeline.py`. No van al repo:
+# dataset_modelado.csv solo pesa ~77 MB y GitHub rechaza archivos de 100 MB.
+datos/
+
+.venv/
+__pycache__/
+*.pyc
+*.parcial

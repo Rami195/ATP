@@ -1,0 +1,39 @@
+# ---------------------------------------------------------------------------
+# Datos generados por los pipelines. NO se versionan: los produce el código.
+# ---------------------------------------------------------------------------
+# Capa bronce y plata del DAG de Airflow (61 MB)
+airflow-atp/include/output/
+
+# Datos crudos y procesados del pipeline Python original (201 MB)
+proyecto-atp/datos/
+
+# ---------------------------------------------------------------------------
+# Entornos y artefactos locales
+# ---------------------------------------------------------------------------
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# Logs de Airflow
+logs/
+airflow.db
+airflow.cfg
+
+# ---------------------------------------------------------------------------
+# Material de cátedra (no es producción nuestra)
+# ---------------------------------------------------------------------------
+*.pdf
+*.pptx
+*.html
+*_files/
+
+# ---------------------------------------------------------------------------
+# Sistema operativo / editor
+# ---------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
