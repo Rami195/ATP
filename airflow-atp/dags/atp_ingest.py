@@ -1,15 +1,34 @@
 """
 ### Dataset canónico ATP — Proyecto Integrador, Ciencia de Datos UTN FRM 2026
 
-Construye el dataset a nivel partido para responder: ¿en qué medida el
-ranking, la forma reciente y el rendimiento bajo presión (break points,
-tie-breaks, sets decisivos) predicen el ganador de un partido ATP?
+Construye el dataset a nivel partido para responder la pregunta del proyecto:
+
+> **Cómo se le gana a quién: estilos de juego del circuito ATP.**
+> ¿Existen estilos de juego diferenciables entre los tenistas según sus
+> patrones de saque y golpeo? ¿Hay estilos globalmente superiores, y el
+> emparejamiento de estilos predice el ganador de un partido por encima del
+> ranking?
+
+La pregunta tiene **dos niveles**, y el dataset los sirve a los dos:
+
+* Los **estilos** son de un jugador, y se construyen agregando sus
+  estadísticas de saque y resto a lo largo de los partidos que jugó.
+* El **emparejamiento** se evalúa a nivel partido, que es la unidad de esta
+  tabla: cada fila enfrenta a dos jugadores y dice quién ganó.
 
 **Una fila = un partido.** La columna objetivo (para las entregas siguientes)
 es quién ganó; acá en la Entrega 1 el pipeline se detiene en el dataset
 consolidado, todavía en formato `winner_`/`loser_` (la reasignación A/B para
 evitar la fuga por ese formato es trabajo de `features.py`, fuera de esta
 entrega).
+
+**Qué cubre la fuente y qué no.** El "saque" está cubierto de punta a punta:
+aces, dobles faltas, primer saque dentro, puntos ganados con primer y segundo
+saque, break points salvados. El "golpeo" **no viene medido directamente** —
+la fuente no publica winners, errores no forzados ni largo de los peloteos— y
+se aproxima con el rendimiento al resto, el tipo de revés de la tabla de
+biografías (conocido para el 81,5% de los partidos) y el perfil por
+superficie. Es una limitación real de la fuente, no un descuido del pipeline.
 
 **Dos capas, dos grupos de tareas**, mismo modelo medallón que `fifa_ingest`:
 
@@ -19,11 +38,15 @@ entrega).
 * **Plata** (`consolidate`) — un partido por fila, tipado, deduplicado, con
   `id_partido` único. No toca la red: lee del bronce ya en disco.
 
-**Por qué no hay sensor ni branching acá**, a diferencia de `fifa_ingest`:
-TML-Database es un repositorio de GitHub estático — no hay nada externo
-impredecible que esperar (no hay Cloudflare, no hay caídas intermitentes), así
-que agregar esa complejidad copiaría un patrón sin que resuelva un problema
-real de esta fuente.
+**Por qué no hay sensor ni branching acá**, a diferencia de `fifa_ingest`: el
+portal de Tennis My Life sirve archivos estáticos — un `GET` a
+`/data/<archivo>.csv` devuelve el CSV directamente, sin Cloudflare, sin
+JavaScript y sin login. No hay una espera real que modelar, así que un sensor
+copiaría un patrón sin resolver ningún problema de esta fuente.
+
+Sí es un servidor propio y no un CDN, de modo que puede tener caídas
+puntuales. Eso lo cubre `_descargar_archivo` con 3 reintentos y backoff, más
+la caché del bronce: un reintento no vuelve a pedir los años ya bajados.
 
 **Reproducibilidad**: mismo código + misma fuente = mismo resultado. Correr
 el DAG dos veces seguidas deja ver, en los logs de `land_bronze`, que las
@@ -93,10 +116,13 @@ CRUCES_CONSISTENCIA = [
     ("l_2ndWon", "l_svpt"), ("l_bpSaved", "l_bpFaced"),
 ]
 
-# Tolerancia de inconsistencias, en % de las filas comparables. No es cero
-# absoluto porque la fuente ya trae 7 filas rotas sobre 71.055 comparables
-# (0,004%). 0,05% deja ~12x de margen sobre ese ruido conocido, y una rotura
-# sistemática del parseo movería el número en órdenes de magnitud.
+# Tolerancia de inconsistencias, en % de las filas comparables de CADA cruce.
+# No es cero absoluto porque la fuente ya trae ruido propio: 10 violaciones
+# repartidas en 4 de los 10 cruces, sobre 70.799 filas comparables. La peor
+# tasa por cruce es 0,0042% (3 filas). 0,05% deja ~12x de margen sobre ese
+# ruido conocido, y una rotura sistemática del parseo movería el número en
+# órdenes de magnitud: corriendo las columnas de stats un lugar, el mismo
+# chequeo salta a 99,98%.
 MAX_PCT_INCONSISTENCIAS = 0.05
 
 # Columnas donde el nulo NO es un dato faltante sino un valor con significado,
@@ -109,9 +135,10 @@ COLUMNAS_NULABLES_POR_DISENIO = {
 
 # Por encima de este % de nulos la columna se registra como aviso. No frena:
 # es observabilidad. Medido: el resto de las columnas se agrupa en una banda
-# conocida de 8,3% (stats de saque, ausentes en partidos viejos) a 9,3%
-# (`minutes`). El umbral va apenas por encima de esa banda para que funcione
-# como alarma real: hoy no suena, y suena si la cobertura empeora.
+# conocida de 8,6% (stats de saque, ausentes en los partidos viejos y en los
+# 409 walkovers) a 9,1% (`minutes`). El umbral va apenas por encima de esa
+# banda para que funcione como alarma real: hoy no suena, y suena si la
+# cobertura empeora.
 AVISO_PCT_NULOS = 0.10
 
 
@@ -123,7 +150,8 @@ AVISO_PCT_NULOS = 0.10
     start_date=pendulum.datetime(2026, 8, 1, tz="America/Argentina/Buenos_Aires"),
     catchup=False,
     # Cortesía con la fuente: no hace falta más para 26 temporadas, y evita
-    # abrir más conexiones simultáneas de las necesarias contra GitHub.
+    # abrir más conexiones simultáneas de las necesarias contra el portal,
+    # que es un servidor propio y no un CDN.
     max_active_tasks=8,
     tags=["ciencia-de-datos", "proyecto-integrador", "entrega-1"],
     doc_md=__doc__,

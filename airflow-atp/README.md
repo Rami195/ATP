@@ -53,17 +53,17 @@ proyecto. Al lado de cada uno está la medición que lo justifica:
 | **Completitud** | 5 columnas obligatorias sin nulos | cero | Medido: hoy `id_partido`, `winner_id`, `loser_id`, `fecha` y `tourney_id` tienen 0 nulos |
 | **Completitud** | Partidos **por temporada** | ≥ 1.200 | La temporada más flaca es 2020 con 1.466 (acortada por COVID); la mediana es 3.012. Un piso global de 1.000 filas se cumpliría con **una sola** temporada de las 26 |
 | **Actualidad** | Están todas las temporadas pedidas | cero faltantes | Atrapa la descarga que falló en silencio |
-| **Precisión** | Rangos físicos (altura, edad, ranking, minutos) | ver constantes | Holgados sobre lo observado: alturas 155–211 cm se validan contra 140–230. `minutes` admite 0 porque son los 51 walkovers, y llega a 720 porque el máximo real es Isner–Mahut 2010 (665 min) |
+| **Precisión** | Rangos físicos (altura, edad, ranking, minutos) | ver constantes | Holgados sobre lo observado: alturas 155–211 cm se validan contra 140–230. `minutes` va hasta 720 porque el máximo real es Isner–Mahut 2010 (665 min). Los 409 walkovers llegan con `minutes` **nulo**, no en 0: el portal no les inventa duración |
 | **Precisión** | Dominios cerrados | `best_of ∈ {3,5}`, `surface ∈ {Hard, Clay, Grass, Carpet}` | Un valor nuevo acá significa que la fuente cambió |
-| **Consistencia** | 10 cruces (`ace ≤ svpt`, `bpSaved ≤ bpFaced`, …) | ≤ 0,05 % | **No es cero**: la fuente ya trae 7 filas rotas sobre 71.055 comparables (0,004 %). El umbral deja ~12× de margen sobre ese ruido conocido y atrapa una rotura sistemática, que movería el número a decenas de puntos |
+| **Consistencia** | 10 cruces (`ace ≤ svpt`, `bpSaved ≤ bpFaced`, …) | ≤ 0,05 % | **No es cero**: la fuente ya trae ruido propio — 10 violaciones repartidas en 4 de los 10 cruces sobre 70.799 filas comparables, la peor tasa 0,0042 %. El umbral deja ~12× de margen y atrapa una rotura sistemática: corriendo las columnas de stats un lugar, el mismo chequeo salta a 99,98 % |
 
 ### Lo que avisa pero no frena
 
 > *Lo crítico frena; lo que es sólo observabilidad, avisa.*
 
-- Las 7 filas inconsistentes de la fuente quedan como aviso en el log.
+- Las 10 violaciones de consistencia que trae la fuente quedan como aviso en el log.
 - Columnas con más de 10 % de nulos. El umbral va apenas por encima de la banda
-  conocida (8,3 % las stats de saque, 9,3 % `minutes`) para que sea una alarma
+  conocida (8,6 % las stats de saque, 9,1 % `minutes`) para que sea una alarma
   real: hoy no suena, y suena si la cobertura empeora.
 - `winner_seed`, `loser_seed`, `winner_entry` y `loser_entry` quedan **excluidas**
   del aviso aunque tengan 59–87 % de nulos: ahí el nulo no es un dato faltante,
