@@ -64,8 +64,11 @@ MIN_PARTIDOS_POR_TEMPORADA = 1200
 # Rangos físicamente posibles, holgados respecto de lo observado para atrapar
 # el disparate sin castigar el caso real y extremo.
 RANGOS_PLAUSIBLES = {
-    # 0 es correcto: son los 51 walkovers (score "W/O"), partidos que no se
-    # jugaron. El máximo observado, 665, es Isner-Mahut 2010 (11h05).
+    # Los 409 walkovers (score "W/O") llegan con `minutes` NULO, no en 0: son
+    # partidos que no se jugaron y la fuente no les inventa duración. Hoy no
+    # hay ninguna fila en 0 y el mínimo real es 3; el piso queda igual en 0
+    # porque un 0 sería plausible y no hay motivo para rechazarlo.
+    # El máximo observado, 665, es Isner-Mahut 2010 (11h05, 70-68 el quinto).
     "minutes": (0, 720),
     "winner_rank": (1, 2500),      # observado: 1 a 2.100
     "loser_rank": (1, 2500),       # observado: 1 a 2.159

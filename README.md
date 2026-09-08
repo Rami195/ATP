@@ -49,9 +49,15 @@ python pipeline.py
 
 ## Fuente
 
-[Tennismylife/TML-Database](https://github.com/Tennismylife/TML-Database) — un
-CSV por temporada (1968–2026) más tablas auxiliares de jugadores. Reemplaza a
-`JeffSackmann/tennis_atp`, que fue dado de baja.
+[Portal de datos de Tennis My Life](https://stats.tennismylife.org/tennis-match-database)
+— un CSV por temporada (1968–2026) más tablas auxiliares de jugadores.
+Reemplaza a `JeffSackmann/tennis_atp`, que fue dado de baja.
+
+La descarga es por **URL directa**: un `GET` por archivo contra
+`https://stats.tennismylife.org/data/<archivo>.csv`, sin API key y sin clonar
+ningún repositorio. El portal publica además un catálogo JSON en
+[`/api/data-files`](https://stats.tennismylife.org/api/data-files). Licencia
+MIT, declarada en el metadato `schema.org/Dataset` de la página.
 
 ## Datos
 

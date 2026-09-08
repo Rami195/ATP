@@ -24,19 +24,38 @@ Re-ejecutarlo es barato porque los CSV crudos quedan cacheados en `datos/crudo/`
 
 ## Fuente
 
-**[Tennismylife/TML-Database](https://github.com/Tennismylife/TML-Database)** —
-un CSV por temporada (1968–2026), 50 columnas, ~3.000 partidos por año.
+**[Portal de datos de Tennis My Life](https://stats.tennismylife.org/tennis-match-database)**
+— un CSV por temporada (1968–2026), 50 columnas, ~3.000 partidos por año.
+
+### Cómo se baja
+
+Un `GET` por archivo contra `https://stats.tennismylife.org/data/<archivo>.csv`,
+que responde `200` con `Content-Type: text/csv`. **No hay scraping, ni API key,
+ni clonado de repositorios**: son archivos servidos en un endpoint público, que
+es el caso más simple de descarga automatizada. El portal expone también un
+catálogo JSON en [`/api/data-files`](https://stats.tennismylife.org/api/data-files)
+(203 archivos, con `name`, `url`, `size` y `mtime`), que el pipeline hoy no
+necesita porque construye las URLs a partir del año.
+
+Licencia **MIT**, declarada en el metadato `schema.org/Dataset` de la página.
 
 > ⚠️ El repositorio que suele recomendarse para esto, `JeffSackmann/tennis_atp`,
 > **fue dado de baja** (404, igual que `tennis_wta` y `tennis_slam_pointbypoint`).
-> TML-Database usa el mismo esquema de columnas más `indoor`, y sigue
+> Tennis My Life usa el mismo esquema de columnas más `indoor`, y sigue
 > actualizándose. Si algún tutorial les manda al repo de Sackmann, está viejo.
+
+> **Por qué el portal y no el espejo en GitHub.** Los mismos CSV están en
+> `Tennismylife/TML-Database`, pero la copia del portal viene corregida. En
+> `2015.csv` difieren 72 filas: el repo etiqueta Rio de Janeiro como ATP `250`
+> (es `500`) y les asigna estadísticas a partidos ganados por **W/O**, que por
+> definición no se jugaron. Bajar del portal evita meter esas dos fuentes de
+> ruido en las features.
 
 Tablas auxiliares que el pipeline también baja:
 
 | Archivo | Contenido |
 |---|---|
-| `ATP_Database.csv` | 7.643 jugadores: altura, peso, mano, **tipo de revés**, entrenadores, lugar de nacimiento |
+| `ATP_Database.csv` | 12.899 jugadores: altura, peso, mano, **tipo de revés**, entrenadores, lugar de nacimiento |
 | `ongoing_tourneys.csv` | Partidos del torneo en curso, fuera de los CSV anuales |
 
 **Nota sobre 2026:** al momento de armar esto, `2026.csv` cubre hasta el 17/01 y
