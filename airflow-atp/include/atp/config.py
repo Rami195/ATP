@@ -15,16 +15,27 @@ OUTPUT_DIR = Path("/usr/local/airflow/include/output")
 DIR_CRUDO = OUTPUT_DIR / "bronze"
 DIR_PROCESADO = OUTPUT_DIR / "silver"
 
-# --- Fuente principal: TML-Database --------------------------------------
-# Reemplazo vivo del repo JeffSackmann/tennis_atp (dado de baja: devuelve 404).
+# --- Fuente principal: portal de datos de Tennis My Life ------------------
+# https://stats.tennismylife.org/tennis-match-database
+#
+# El portal publica un CSV por temporada bajo /data/ y un catalogo JSON en
+# /api/data-files (203 archivos: ATP, WTA, challengers y qualys). Licencia MIT,
+# declarada en el metadato schema.org/Dataset de la pagina.
+#
+# Se baja del portal y no del repo espejo en GitHub porque es la fuente que el
+# proyecto publica como oficial, y porque ademas viene corregida: en el repo,
+# Rio de Janeiro 2015 figura como ATP 250 (es 500) y los partidos ganados por
+# W/O traen estadisticas de un partido que nunca se jugo.
+#
+# Reemplaza a JeffSackmann/tennis_atp, dado de baja (devuelve 404).
 # Mismo esquema de columnas + la columna `indoor`.
-BASE_TML = "https://raw.githubusercontent.com/Tennismylife/TML-Database/master"
+BASE_TML = "https://stats.tennismylife.org/data"
 
 ANIO_MIN_DISPONIBLE = 1968
 ANIO_DESDE_DEFECTO = 2000
 ANIO_HASTA_DEFECTO = 2025  # 2026 esta incompleto en la fuente, ver README
 
-# Tabla de biografias de jugadores (7.643 filas): altura, peso, mano, reves,
+# Tabla de biografias de jugadores (12.899 filas): altura, peso, mano, reves,
 # entrenadores, lugar de nacimiento. Se joinea por id de jugador.
 ARCHIVO_BIOS = "ATP_Database.csv"
 
@@ -36,7 +47,7 @@ USER_AGENT = "proyecto-integrador-utnfrm-cienciadatos/1.0 (uso academico)"
 TIMEOUT_SEG = 60
 REINTENTOS = 3
 ESPERA_ENTRE_REINTENTOS_SEG = 2.0
-PAUSA_ENTRE_DESCARGAS_SEG = 0.3  # cortesia con el servidor
+PAUSA_ENTRE_DESCARGAS_SEG = 0.3  # cortesia: el portal es un nginx propio, no un CDN
 
 # --- Modelado (no se usa en la Entrega 1, queda para consistencia con
 # proyecto-atp/src/config.py y las entregas siguientes) ---------------------

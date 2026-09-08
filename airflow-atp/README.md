@@ -40,10 +40,16 @@ include/output/
 
 ## Por qué no hay sensor ni branching
 
-A diferencia de `fifa_ingest` (la práctica de la Unidad 1), TML-Database es un
-repositorio de GitHub estático: no hay Cloudflare, ni caídas intermitentes que
-esperar. Agregar un sensor acá copiaría un patrón sin que resuelva un problema
-real de esta fuente — punto que conviene tener claro para la defensa.
+A diferencia de `fifa_ingest` (la práctica de la Unidad 1), el portal de Tennis
+My Life sirve archivos estáticos: un `GET` a `/data/<archivo>.csv` devuelve el
+CSV directamente, sin Cloudflare, sin JavaScript y sin login. No hay una espera
+real que modelar, así que un sensor acá copiaría un patrón sin resolver ningún
+problema de esta fuente — punto que conviene tener claro para la defensa.
+
+Sí es un servidor propio (nginx) y no un CDN, de modo que puede tener caídas
+puntuales. Eso lo cubre `_descargar_archivo` con 3 reintentos y backoff, más la
+caché de la capa bronce: si una tarea falla, el reintento no volvería a pedir
+los años que ya bajaron.
 
 ## Qué falta para las próximas entregas
 

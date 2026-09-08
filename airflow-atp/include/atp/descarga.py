@@ -87,7 +87,7 @@ def descargar_anios(
     dir_destino = dir_destino or config.DIR_CRUDO
     dir_destino.mkdir(parents=True, exist_ok=True)
 
-    print(f"[1/4] Descargando temporadas {desde}-{hasta} desde TML-Database")
+    print(f"[1/4] Descargando temporadas {desde}-{hasta} desde stats.tennismylife.org")
     disponibles: list[Path] = []
 
     for anio in range(desde, hasta + 1):
@@ -104,7 +104,7 @@ def descargar_anios(
     if not disponibles:
         raise RuntimeError(
             "No se pudo descargar ninguna temporada. Revisa la conexion o "
-            "si el repositorio TML-Database sigue publico."
+            "si stats.tennismylife.org sigue disponible."
         )
 
     print(f"      {len(disponibles)} temporadas disponibles\n")
