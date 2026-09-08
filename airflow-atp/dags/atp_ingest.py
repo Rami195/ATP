@@ -44,6 +44,73 @@ log = logging.getLogger(__name__)
 
 OUTPUT_DIR = Path("/usr/local/airflow/include/output")
 
+# ---------------------------------------------------------------------------
+# Umbrales de validación
+#
+# Todos salen de perfilar el dataset real (77.474 partidos, 2000-2025), no de
+# copiar un número de otro proyecto: un umbral heredado no protege nada. Al
+# lado de cada uno está lo que se midió, que es lo que lo justifica.
+# ---------------------------------------------------------------------------
+
+# Sin estas columnas la fila no identifica un partido ni se puede ordenar en
+# el tiempo. Medido: hoy las cinco tienen 0 nulos, así que exigir 0 es real.
+COLUMNAS_OBLIGATORIAS = ["id_partido", "winner_id", "loser_id", "fecha", "tourney_id"]
+
+# Piso de partidos por temporada. Medido: la más flaca es 2020 con 1.466
+# (temporada acortada por COVID) y la mediana es 3.012. 1.200 deja un 18% de
+# margen bajo ese piso histórico y sigue atrapando una descarga truncada.
+MIN_PARTIDOS_POR_TEMPORADA = 1200
+
+# Rangos físicamente posibles, holgados respecto de lo observado para atrapar
+# el disparate sin castigar el caso real y extremo.
+RANGOS_PLAUSIBLES = {
+    # 0 es correcto: son los 51 walkovers (score "W/O"), partidos que no se
+    # jugaron. El máximo observado, 665, es Isner-Mahut 2010 (11h05).
+    "minutes": (0, 720),
+    "winner_rank": (1, 2500),      # observado: 1 a 2.100
+    "loser_rank": (1, 2500),       # observado: 1 a 2.159
+    "winner_ht": (140, 230),       # observado: 155 a 211 cm
+    "loser_ht": (140, 230),
+    "winner_age": (14, 50),        # observado: 14,9 a 44,6 años
+    "loser_age": (14, 50),
+}
+
+# Dominios cerrados: cualquier valor nuevo acá es una fuente que cambió.
+DOMINIOS = {
+    "best_of": {3, 5},
+    "surface": {"Hard", "Clay", "Grass", "Carpet"},
+}
+
+# Cruces que no pueden violarse: no podés meter más aces que puntos sacados.
+# Si el parseo se corriera de columna, estas relaciones se romperían en masa.
+CRUCES_CONSISTENCIA = [
+    ("w_ace", "w_svpt"), ("w_1stIn", "w_svpt"), ("w_1stWon", "w_1stIn"),
+    ("w_2ndWon", "w_svpt"), ("w_bpSaved", "w_bpFaced"),
+    ("l_ace", "l_svpt"), ("l_1stIn", "l_svpt"), ("l_1stWon", "l_1stIn"),
+    ("l_2ndWon", "l_svpt"), ("l_bpSaved", "l_bpFaced"),
+]
+
+# Tolerancia de inconsistencias, en % de las filas comparables. No es cero
+# absoluto porque la fuente ya trae 7 filas rotas sobre 71.055 comparables
+# (0,004%). 0,05% deja ~12x de margen sobre ese ruido conocido, y una rotura
+# sistemática del parseo movería el número en órdenes de magnitud.
+MAX_PCT_INCONSISTENCIAS = 0.05
+
+# Columnas donde el nulo NO es un dato faltante sino un valor con significado,
+# así que quedan fuera del aviso de nulos: un `seed` vacío significa "no era
+# cabeza de serie" (la mayoría no lo es) y un `entry` vacío, "entró directo"
+# (no fue wildcard ni qualifier). Medido: 59-87% de nulos, todos legítimos.
+COLUMNAS_NULABLES_POR_DISENIO = {
+    "winner_seed", "loser_seed", "winner_entry", "loser_entry",
+}
+
+# Por encima de este % de nulos la columna se registra como aviso. No frena:
+# es observabilidad. Medido: el resto de las columnas se agrupa en una banda
+# conocida de 8,3% (stats de saque, ausentes en partidos viejos) a 9,3%
+# (`minutes`). El umbral va apenas por encima de esa banda para que funcione
+# como alarma real: hoy no suena, y suena si la cobertura empeora.
+AVISO_PCT_NULOS = 0.10
+
 
 @dag(
     dag_id="atp_ingest",
@@ -135,55 +202,162 @@ def atp_ingest():
         return str(destino)
 
     @task
-    def quality_report(ruta_partidos: str) -> str:
-        """Valida los 6 criterios medibles de la Entrega 1 sobre el dataset.
+    def validate(ruta_partidos: str, **context) -> str:
+        """Valida el dataset contra las cinco dimensiones de calidad.
 
-        Si alguno falla, el DAG falla a propósito: no se publica un dataset
-        que no cumple el piso de calidad. Ver "Qué es un buen dataset de
-        salida" en las instrucciones de la entrega.
+        La validación es una tarea más del grafo, no un chequeo posterior:
+        va entre `consolidate` y `save`, así que **si un chequeo crítico no
+        pasa, `save` no corre** y el dato malo no llega al entregable.
+
+        Dos niveles de severidad, según qué esté en juego:
+
+        * **Crítico -> frena.** Rompe una regla que no puede romperse sin que
+          el dataset sea inservible o esté mutilado.
+        * **Observabilidad -> avisa.** Vale la pena mirarlo, pero no invalida
+          la corrida. Queda en el log y en `informe_calidad.csv`.
+
+        Los umbrales salen del profiling del dataset (ver constantes arriba),
+        no de un número heredado: un umbral que no se eligió para este dataset
+        no protege nada.
         """
         import pandas as pd
 
         df = pd.read_csv(ruta_partidos, low_memory=False, parse_dates=["fecha"])
+        params = context["params"]
 
-        problemas = []
+        problemas: list[str] = []   # frenan la corrida
+        avisos: list[str] = []      # sólo se registran
 
+        # --- 1. UNICIDAD -------------------------------------------------
+        # Test operativo de la unidad de análisis: si la clave repite, o la
+        # unidad está mal definida o el pipeline duplica filas. Cero tolerancia.
         if not df["id_partido"].is_unique:
-            repetidos = df["id_partido"].duplicated().sum()
-            problemas.append(f"clave 'id_partido' con {repetidos} duplicados")
+            repetidos = int(df["id_partido"].duplicated().sum())
+            problemas.append(f"[unicidad] 'id_partido' con {repetidos} duplicados")
 
-        if len(df) <= 1000:
-            problemas.append(f"volumen insuficiente: {len(df)} filas (se pide > 1.000)")
+        # --- 2. COMPLETITUD ----------------------------------------------
+        # Sin estas columnas la fila no identifica un partido ni se puede
+        # ordenar en el tiempo. Medido: hoy las cinco tienen 0 nulos.
+        for col in COLUMNAS_OBLIGATORIAS:
+            nulos = int(df[col].isna().sum())
+            if nulos:
+                problemas.append(f"[completitud] '{col}' tiene {nulos} nulos y no puede tenerlos")
+
+        vacias = df.columns[df.isna().all()].tolist()
+        if vacias:
+            problemas.append(f"[completitud] columnas 100% nulas: {vacias}")
+
+        # Volumen POR TEMPORADA, no global: un piso global de 1.000 filas se
+        # cumpliría con una sola temporada descargada de las 26 pedidas, y el
+        # DAG quedaría en verde con un dataset mutilado.
+        por_temporada = df.groupby("anio_archivo").size()
+        flacas = por_temporada[por_temporada < MIN_PARTIDOS_POR_TEMPORADA]
+        if not flacas.empty:
+            problemas.append(
+                f"[completitud] temporadas con menos de {MIN_PARTIDOS_POR_TEMPORADA} "
+                f"partidos: {flacas.to_dict()}")
 
         if df.shape[1] < 5:
-            problemas.append(f"muy pocas columnas: {df.shape[1]} (se piden >= 5)")
+            problemas.append(f"[completitud] muy pocas columnas: {df.shape[1]} (se piden >= 5)")
 
+        # --- 3. ACTUALIDAD -----------------------------------------------
+        # ¿Está todo lo que se pidió, o alguna descarga falló en silencio?
+        pedidas = set(range(params["anio_desde"], params["anio_hasta"] + 1))
+        presentes = set(df["anio_archivo"].unique())
+        if pedidas - presentes:
+            problemas.append(f"[actualidad] faltan temporadas pedidas: {sorted(pedidas - presentes)}")
+
+        # --- 4. PRECISIÓN -------------------------------------------------
+        # Rangos físicamente posibles. Un jugador de 300 cm no es un dato
+        # raro: es un error de captura. Los límites son holgados respecto de
+        # lo observado, para atrapar el disparate sin castigar el caso real
+        # (el máximo de minutos observado, 665, es Isner-Mahut 2010).
+        for col, (minimo, maximo) in RANGOS_PLAUSIBLES.items():
+            s = pd.to_numeric(df[col], errors="coerce")
+            fuera = int(((s < minimo) | (s > maximo)).sum())
+            if fuera:
+                problemas.append(
+                    f"[precisión] '{col}' con {fuera} valores fuera de [{minimo}, {maximo}]")
+
+        for col, dominio in DOMINIOS.items():
+            invalidos = df[col].dropna()
+            invalidos = invalidos[~invalidos.isin(dominio)]
+            if len(invalidos):
+                problemas.append(
+                    f"[precisión] '{col}' con {len(invalidos)} valores fuera del dominio "
+                    f"{sorted(dominio)}: {sorted(invalidos.unique())[:5]}")
+
+        # --- 5. CONSISTENCIA ----------------------------------------------
+        # Cada estadística es plausible por separado; el problema aparece al
+        # cruzarlas. Si el parseo se corriera de columna, estas relaciones se
+        # romperían en masa.
+        #
+        # Se comparan sólo las filas donde ambos valores existen: `NaN <= x`
+        # devuelve False en pandas y contaría como violación falsa.
+        #
+        # Tolerancia y no cero absoluto porque la fuente ya trae 7 filas
+        # inconsistentes sobre 71.055 comparables (0,004%). El umbral deja
+        # margen para ese ruido conocido y sigue atrapando una rotura
+        # sistemática, que movería el número en órdenes de magnitud.
+        for menor, mayor in CRUCES_CONSISTENCIA:
+            comparables = df[menor].notna() & df[mayor].notna()
+            n = int(comparables.sum())
+            if not n:
+                continue
+            viol = int((df.loc[comparables, menor] > df.loc[comparables, mayor]).sum())
+            pct = viol / n * 100
+            if pct > MAX_PCT_INCONSISTENCIAS:
+                problemas.append(
+                    f"[consistencia] '{menor} <= {mayor}' violado en {viol} de {n} filas "
+                    f"({pct:.3f}%, tope {MAX_PCT_INCONSISTENCIAS}%)")
+            elif viol:
+                avisos.append(f"{menor} <= {mayor}: {viol} filas inconsistentes ({pct:.3f}%)")
+
+        # --- Criterio de la consigna: mezcla de tipos ---------------------
+        # `is_string_dtype` además de `is_object_dtype` porque en pandas 3 las
+        # columnas de texto dejaron de ser `object` y pasaron a ser `str`: con
+        # sólo el primer chequeo, esto daría falso al reconstruir la imagen con
+        # una versión más nueva (requirements.txt sólo fija `pandas>=2.2`).
         tipos = df.dtypes
         hay_numerica = tipos.apply(lambda t: pd.api.types.is_numeric_dtype(t)).any()
         hay_fecha = tipos.apply(lambda t: pd.api.types.is_datetime64_any_dtype(t)).any()
         hay_categorica = tipos.apply(
-            lambda t: pd.api.types.is_object_dtype(t) or isinstance(t, pd.CategoricalDtype)
+            lambda t: pd.api.types.is_object_dtype(t)
+            or pd.api.types.is_string_dtype(t)
+            or isinstance(t, pd.CategoricalDtype)
         ).any()
         if not (hay_numerica and hay_fecha and hay_categorica):
             problemas.append(
-                f"falta variedad de tipos (numérica={hay_numerica}, "
+                f"[tipos] falta variedad (numérica={hay_numerica}, "
                 f"fecha={hay_fecha}, categórica={hay_categorica})")
 
-        vacias = df.columns[df.isna().all()].tolist()
-        if vacias:
-            problemas.append(f"columnas 100% nulas: {vacias}")
+        # --- Observabilidad: nulos altos, avisan pero no frenan -----------
+        # Se excluyen las columnas donde el nulo es un valor con significado
+        # propio, no un dato faltante (ver COLUMNAS_NULABLES_POR_DISENIO).
+        nulos_pct = df.isna().mean().sort_values(ascending=False)
+        for col, pct in nulos_pct[nulos_pct > AVISO_PCT_NULOS].items():
+            if col not in COLUMNAS_NULABLES_POR_DISENIO:
+                avisos.append(f"'{col}' con {pct*100:.1f}% de nulos")
+
+        # --- Veredicto -----------------------------------------------------
+        for aviso in avisos:
+            log.warning("Observabilidad: %s", aviso)
 
         if problemas:
-            raise ValueError("Chequeo de calidad fallido:\n  - " + "\n  - ".join(problemas))
+            raise ValueError(
+                "Validación fallida, no se publica el dataset:\n  - "
+                + "\n  - ".join(problemas))
 
-        # El informe de nulos por columna (informativo, no bloqueante): saber
-        # cuáles hay y por qué es parte de lo que hay que poder explicar.
+        # El informe de nulos por columna: saber cuáles hay y por qué es parte
+        # de lo que hay que poder explicar, aunque no bloquee.
         informe = consolidar.informe_calidad(df)
         ruta_informe = config.DIR_PROCESADO / "informe_calidad.csv"
         informe.to_csv(ruta_informe, index=False)
 
-        log.info("Calidad OK: %s filas x %s columnas, clave única, sin columnas vacías",
-                 len(df), df.shape[1])
+        log.info(
+            "Validación OK: %s filas x %s columnas, %s temporadas, clave única, "
+            "%s avisos de observabilidad",
+            len(df), df.shape[1], len(presentes), len(avisos))
         return ruta_partidos
 
     @task
@@ -217,7 +391,7 @@ def atp_ingest():
     consolidado = consolidate(bronces)
     auxiliares >> consolidado
 
-    save(quality_report(consolidado))
+    save(validate(consolidado))
 
 
 atp_ingest()
