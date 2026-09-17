@@ -47,7 +47,7 @@ from pathlib import Path
 import pendulum
 from airflow.sdk import Param, dag, task
 
-from atp import config, consolidar, descarga
+from atp import config, consolidar, dataset_jugadores, descarga
 
 log = logging.getLogger(__name__)
 
@@ -202,12 +202,15 @@ def atp_ingest():
         return str(destino)
 
     @task
-    def validate(ruta_partidos: str, **context) -> str:
+    def validate(ruta_partidos: str, ruta_jugadores: str, **context) -> dict:
         """Valida el dataset contra las cinco dimensiones de calidad.
 
         La validación es una tarea más del grafo, no un chequeo posterior:
         va entre `consolidate` y `save`, así que **si un chequeo crítico no
         pasa, `save` no corre** y el dato malo no llega al entregable.
+
+        Valida tanto el dataset de partidos como el de jugadores, y genera
+        un informe de calidad para cada uno.
 
         Dos niveles de severidad, según qué esté en juego:
 
@@ -335,20 +338,31 @@ def atp_ingest():
                 "Validación fallida, no se publica el dataset:\n  - "
                 + "\n  - ".join(problemas))
 
-        # El informe de nulos por columna
+        # --- Informes de calidad -------------------------------------------
+        # Partidos
         informe = consolidar.informe_calidad(df)
         ruta_informe = config.DIR_PROCESADO / "informe_calidad.csv"
         informe.to_csv(ruta_informe, index=False)
 
+        # Jugadores
+        df_jugadores = pd.read_csv(ruta_jugadores, low_memory=False)
+        dataset_jugadores.validar_dataset(df_jugadores)
+        informe_jug = dataset_jugadores.informe_calidad_jugadores(df_jugadores)
+        ruta_informe_jug = config.DIR_PROCESADO / "informe_calidad_jugadores.csv"
+        informe_jug.to_csv(ruta_informe_jug, index=False)
+
         log.info(
-            "Validación OK: %s filas x %s columnas, %s temporadas, clave única, "
-            "%s avisos de observabilidad",
-            len(df), df.shape[1], len(presentes), len(avisos))
-        return ruta_partidos
+            "Validación OK — partidos: %s filas x %s columnas, %s temporadas; "
+            "jugadores: %s filas x %s columnas; %s avisos de observabilidad",
+            len(df), df.shape[1], len(presentes),
+            len(df_jugadores), df_jugadores.shape[1], len(avisos))
+        return {"partidos": ruta_partidos, "jugadores": ruta_jugadores}
 
     @task
-    def save(ruta_partidos: str, **context) -> str:
-        """Escribe el entregable fechado con la corrida.
+    def save(rutas: dict, **context) -> dict:
+        """Escribe los entregables fechados con la corrida.
+
+        Guarda tanto el dataset de partidos como el de jugadores.
 
         La fecha sale del `DagRun`, no de `context["ds"]`: este DAG corre a
         demanda (`schedule=None`), así que no siempre hay un intervalo de
@@ -361,11 +375,29 @@ def atp_ingest():
         ds = momento.date().isoformat()
 
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-        destino = OUTPUT_DIR / f"atp_partidos_{ds}.csv"
-        shutil.copy(ruta_partidos, destino)
 
-        log.info("Dataset escrito en %s", destino)
-        return str(destino)
+        destino_partidos = OUTPUT_DIR / f"atp_partidos_{ds}.csv"
+        shutil.copy(rutas["partidos"], destino_partidos)
+        log.info("Dataset de partidos escrito en %s", destino_partidos)
+
+        destino_jugadores = OUTPUT_DIR / f"atp_jugadores_{ds}.csv"
+        shutil.copy(rutas["jugadores"], destino_jugadores)
+        log.info("Dataset de jugadores escrito en %s", destino_jugadores)
+
+        return {
+            "partidos": str(destino_partidos),
+            "jugadores": str(destino_jugadores),
+        }
+
+    @task
+    def build_player_dataset(ruta_partidos: str) -> str:
+        """Construye el dataset de jugadores ATP (una fila por jugador).
+
+        Lee el consolidado de partidos, agrega estadísticas totales y por
+        superficie, calcula títulos, y guarda el resultado en la capa plata.
+        Toda la lógica está en ``include/atp/dataset_jugadores.py``.
+        """
+        return dataset_jugadores.build_player_dataset(ruta_partidos)
 
     anios = discover_seasons()
     bronces = land_bronze.expand(anio=anios)
@@ -377,7 +409,8 @@ def atp_ingest():
     consolidado = consolidate(bronces)
     auxiliares >> consolidado
 
-    save(validate(consolidado))
+    jugadores = build_player_dataset(consolidado)
+    save(validate(consolidado, jugadores))
 
 
 atp_ingest()
