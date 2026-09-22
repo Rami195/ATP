@@ -59,7 +59,7 @@ def descargar_temporada(
     forzar: bool = False,
     dir_destino: Path | None = None,
 ) -> Path:
-    """Descarga (o reusa la cache de) el CSV de una unica temporada.
+    """Descarga (o reusa la cache de) el CSV de una unica temporada ATP Tour.
 
     Es la version de `descargar_anios` para una tarea mapeada de Airflow: cada
     instancia de `land_bronze` baja un anio, asi que necesita esta unidad mas
@@ -77,17 +77,88 @@ def descargar_temporada(
     return destino
 
 
+def descargar_temporada_challenger(
+    anio: int,
+    forzar: bool = False,
+    dir_destino: Path | None = None,
+) -> Path:
+    """Descarga (o reusa la cache de) el CSV de una unica temporada Challenger.
+
+    Es la version para la tarea mapeada `land_bronze_challenger` en Airflow.
+    """
+    dir_destino = dir_destino or config.DIR_CRUDO
+    dir_destino.mkdir(parents=True, exist_ok=True)
+    nombre_archivo = f"{anio}_challenger.csv"
+    destino = dir_destino / nombre_archivo
+
+    _, mensaje = _descargar_archivo(f"{config.BASE_TML}/{nombre_archivo}", destino, forzar)
+    print(mensaje)
+
+    if not destino.exists():
+        raise RuntimeError(f"No se pudo descargar la temporada challenger {anio}: {mensaje}")
+    return destino
+
+
+def descargar_temporada_quali(
+    anio: int,
+    forzar: bool = False,
+    dir_destino: Path | None = None,
+) -> Path | None:
+    """Descarga (o reusa la cache de) el CSV de una temporada ATP Qualifying (disponible desde 2007).
+
+    Es la version para la tarea mapeada `land_bronze_quali` en Airflow.
+    """
+    if anio < config.ANIO_MIN_QUALI:
+        print(f"  INFO    Qualifying no disponible para el anio {anio} (disponible desde {config.ANIO_MIN_QUALI})")
+        return None
+
+    dir_destino = dir_destino or config.DIR_CRUDO
+    dir_destino.mkdir(parents=True, exist_ok=True)
+    nombre_archivo = f"{anio}_atp_quali.csv"
+    destino = dir_destino / nombre_archivo
+    url = f"{config.BASE_TML}/atp_quali/{nombre_archivo}"
+
+    _, mensaje = _descargar_archivo(url, destino, forzar)
+    print(mensaje)
+
+    if not destino.exists():
+        raise RuntimeError(f"No se pudo descargar la temporada qualifying {anio}: {mensaje}")
+    return destino
+
+
+def descargar_anios_quali(
+    desde: int,
+    hasta: int,
+    forzar: bool = False,
+    dir_destino: Path | None = None,
+) -> list[Path]:
+    """Baja un CSV por temporada ATP Qualifying. Devuelve las rutas efectivamente disponibles."""
+    dir_destino = dir_destino or config.DIR_CRUDO
+    dir_destino.mkdir(parents=True, exist_ok=True)
+
+    print(f"[1/4] Descargando temporadas {desde}-{hasta} Qualifying desde stats.tennismylife.org")
+    disponibles: list[Path] = []
+
+    for anio in range(max(desde, config.ANIO_MIN_QUALI), hasta + 1):
+        destino = descargar_temporada_quali(anio, forzar=forzar, dir_destino=dir_destino)
+        if destino and destino.exists():
+            disponibles.append(destino)
+        time.sleep(config.PAUSA_ENTRE_DESCARGAS_SEG)
+
+    return disponibles
+
+
 def descargar_anios(
     desde: int,
     hasta: int,
     forzar: bool = False,
     dir_destino: Path | None = None,
 ) -> list[Path]:
-    """Baja un CSV por temporada. Devuelve las rutas efectivamente disponibles."""
+    """Baja un CSV por temporada ATP Tour. Devuelve las rutas efectivamente disponibles."""
     dir_destino = dir_destino or config.DIR_CRUDO
     dir_destino.mkdir(parents=True, exist_ok=True)
 
-    print(f"[1/4] Descargando temporadas {desde}-{hasta} desde stats.tennismylife.org")
+    print(f"[1/4] Descargando temporadas {desde}-{hasta} ATP Tour desde stats.tennismylife.org")
     disponibles: list[Path] = []
 
     for anio in range(desde, hasta + 1):
@@ -111,6 +182,41 @@ def descargar_anios(
     return disponibles
 
 
+def descargar_anios_challenger(
+    desde: int,
+    hasta: int,
+    forzar: bool = False,
+    dir_destino: Path | None = None,
+) -> list[Path]:
+    """Baja un CSV por temporada Challenger. Devuelve las rutas efectivamente disponibles."""
+    dir_destino = dir_destino or config.DIR_CRUDO
+    dir_destino.mkdir(parents=True, exist_ok=True)
+
+    print(f"[1/4] Descargando temporadas {desde}-{hasta} Challenger desde stats.tennismylife.org")
+    disponibles: list[Path] = []
+
+    for anio in range(desde, hasta + 1):
+        nombre_archivo = f"{anio}_challenger.csv"
+        destino = dir_destino / nombre_archivo
+        descargado, mensaje = _descargar_archivo(
+            f"{config.BASE_TML}/{nombre_archivo}", destino, forzar
+        )
+        print(mensaje)
+        if destino.exists():
+            disponibles.append(destino)
+        if descargado:
+            time.sleep(config.PAUSA_ENTRE_DESCARGAS_SEG)
+
+    if not disponibles:
+        raise RuntimeError(
+            "No se pudo descargar ninguna temporada challenger. Revisa la conexion o "
+            "si stats.tennismylife.org sigue disponible."
+        )
+
+    print(f"      {len(disponibles)} temporadas challenger disponibles\n")
+    return disponibles
+
+
 def descargar_auxiliares(forzar: bool = False, dir_destino: Path | None = None) -> dict[str, Path]:
     """Baja las tablas auxiliares (biografias y torneos en curso)."""
     dir_destino = dir_destino or config.DIR_CRUDO
@@ -120,6 +226,7 @@ def descargar_auxiliares(forzar: bool = False, dir_destino: Path | None = None) 
     for clave, archivo in (
         ("bios", config.ARCHIVO_BIOS),
         ("en_curso", config.ARCHIVO_EN_CURSO),
+        ("en_curso_challenger", config.ARCHIVO_EN_CURSO_CHALLENGER),
     ):
         destino = dir_destino / archivo
         _, mensaje = _descargar_archivo(f"{config.BASE_TML}/{archivo}", destino, forzar)

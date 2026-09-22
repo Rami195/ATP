@@ -162,7 +162,7 @@ def atp_ingest():
     @task(map_index_template="{{ task.op_kwargs['anio'] }}",
           retries=2, retry_delay=pendulum.duration(seconds=15))
     def land_bronze(anio: int, **context) -> str:
-        """**Capa bronce**: baja el CSV de una temporada, sin interpretarlo.
+        """**Capa bronce**: baja el CSV de una temporada ATP Tour, sin interpretarlo.
 
         El bronce es append-only: si la temporada ya está en disco no se
         vuelve a pedir. Esa lógica vive en `descargar_temporada`, en
@@ -171,6 +171,22 @@ def atp_ingest():
         forzar = context["params"]["forzar_descarga"]
         destino = descarga.descargar_temporada(anio, forzar=forzar)
         return str(destino)
+
+    @task(map_index_template="{{ task.op_kwargs['anio'] }}",
+          retries=2, retry_delay=pendulum.duration(seconds=15))
+    def land_bronze_challenger(anio: int, **context) -> str:
+        """**Capa bronce Challenger**: baja el CSV de una temporada Challenger, sin interpretarlo."""
+        forzar = context["params"]["forzar_descarga"]
+        destino = descarga.descargar_temporada_challenger(anio, forzar=forzar)
+        return str(destino)
+
+    @task(map_index_template="{{ task.op_kwargs['anio'] }}",
+          retries=2, retry_delay=pendulum.duration(seconds=15))
+    def land_bronze_quali(anio: int, **context) -> str | None:
+        """**Capa bronce Qualifying**: baja el CSV de una temporada ATP Qualifying, sin interpretarlo."""
+        forzar = context["params"]["forzar_descarga"]
+        destino = descarga.descargar_temporada_quali(anio, forzar=forzar)
+        return str(destino) if destino else None
 
     @task
     def land_bronze_aux(**context) -> list[str]:
@@ -185,7 +201,7 @@ def atp_ingest():
 
     @task
     def consolidate(rutas_temporadas: list[str]) -> str:
-        """**Capa plata**: une las temporadas en una tabla partido-nivel.
+        """**Capa plata**: une las temporadas ATP Tour en una tabla partido-nivel.
 
         No toca la red — todo lo que necesita ya está en el bronce. Tipa
         columnas, deduplica y arma `id_partido` único (ver
@@ -197,12 +213,59 @@ def atp_ingest():
         destino = config.DIR_PROCESADO / "partidos_consolidado.csv"
         partidos.to_csv(destino, index=False)
 
-        log.info("Consolidado: %s filas x %s columnas -> %s",
+        log.info("Consolidado ATP Tour: %s filas x %s columnas -> %s",
                  len(partidos), len(partidos.columns), destino)
         return str(destino)
 
     @task
-    def validate(ruta_partidos: str, ruta_jugadores: str, **context) -> dict:
+    def consolidate_challenger(rutas_temporadas: list[str]) -> str:
+        """**Capa plata Challenger**: une las temporadas Challenger en una tabla partido-nivel.
+
+        No toca la red — todo lo que necesita ya está en el bronce. Tipa
+        columnas, deduplica y arma `id_partido` único (ver
+        `include/atp/consolidar.py`).
+        """
+        partidos = consolidar.consolidar([Path(r) for r in rutas_temporadas])
+
+        config.DIR_PROCESADO.mkdir(parents=True, exist_ok=True)
+        destino = config.DIR_PROCESADO / "partidos_consolidado_challenger.csv"
+        partidos.to_csv(destino, index=False)
+
+        log.info("Consolidado Challenger: %s filas x %s columnas -> %s",
+                 len(partidos), len(partidos.columns), destino)
+        return str(destino)
+
+    @task
+    def consolidate_quali(rutas_temporadas: list[str | None]) -> str | None:
+        """**Capa plata Qualifying**: une las temporadas Qualifying en una tabla partido-nivel.
+
+        No toca la red — todo lo que necesita ya está en el bronce. Tipa
+        columnas, deduplica y arma `id_partido` único (ver
+        `include/atp/consolidar.py`).
+        """
+        rutas_validas = [Path(r) for r in rutas_temporadas if r]
+        if not rutas_validas:
+            log.info("No hay archivos de qualifying para consolidar")
+            return None
+
+        partidos = consolidar.consolidar(rutas_validas)
+
+        config.DIR_PROCESADO.mkdir(parents=True, exist_ok=True)
+        destino = config.DIR_PROCESADO / "partidos_consolidado_quali.csv"
+        partidos.to_csv(destino, index=False)
+
+        log.info("Consolidado Qualifying: %s filas x %s columnas -> %s",
+                 len(partidos), len(partidos.columns), destino)
+        return str(destino)
+
+    @task
+    def validate(
+        ruta_partidos: str,
+        ruta_jugadores: str,
+        ruta_challenger: str | None = None,
+        ruta_quali: str | None = None,
+        **context,
+    ) -> dict:
         """Valida el dataset contra las cinco dimensiones de calidad.
 
         La validación es una tarea más del grafo, no un chequeo posterior:
@@ -356,13 +419,18 @@ def atp_ingest():
             "jugadores: %s filas x %s columnas; %s avisos de observabilidad",
             len(df), df.shape[1], len(presentes),
             len(df_jugadores), df_jugadores.shape[1], len(avisos))
-        return {"partidos": ruta_partidos, "jugadores": ruta_jugadores}
+        resultado = {"partidos": ruta_partidos, "jugadores": ruta_jugadores}
+        if ruta_challenger:
+            resultado["challenger"] = ruta_challenger
+        if ruta_quali:
+            resultado["quali"] = ruta_quali
+        return resultado
 
     @task
     def save(rutas: dict, **context) -> dict:
         """Escribe los entregables fechados con la corrida.
 
-        Guarda tanto el dataset de partidos como el de jugadores.
+        Guarda los datasets de partidos (ATP Tour, Challenger, Qualifying) y el de jugadores.
 
         La fecha sale del `DagRun`, no de `context["ds"]`: este DAG corre a
         demanda (`schedule=None`), así que no siempre hay un intervalo de
@@ -384,10 +452,24 @@ def atp_ingest():
         shutil.copy(rutas["jugadores"], destino_jugadores)
         log.info("Dataset de jugadores escrito en %s", destino_jugadores)
 
-        return {
+        retorno = {
             "partidos": str(destino_partidos),
             "jugadores": str(destino_jugadores),
         }
+
+        if "challenger" in rutas and rutas["challenger"]:
+            destino_challenger = OUTPUT_DIR / f"atp_partidos_challenger_{ds}.csv"
+            shutil.copy(rutas["challenger"], destino_challenger)
+            log.info("Dataset de partidos Challenger escrito en %s", destino_challenger)
+            retorno["challenger"] = str(destino_challenger)
+
+        if "quali" in rutas and rutas["quali"]:
+            destino_quali = OUTPUT_DIR / f"atp_partidos_quali_{ds}.csv"
+            shutil.copy(rutas["quali"], destino_quali)
+            log.info("Dataset de partidos Qualifying escrito en %s", destino_quali)
+            retorno["quali"] = str(destino_quali)
+
+        return retorno
 
     @task
     def build_player_dataset(ruta_partidos: str) -> str:
@@ -401,16 +483,22 @@ def atp_ingest():
 
     anios = discover_seasons()
     bronces = land_bronze.expand(anio=anios)
+    bronces_challenger = land_bronze_challenger.expand(anio=anios)
+    bronces_quali = land_bronze_quali.expand(anio=anios)
     auxiliares = land_bronze_aux()
 
     # Las tablas auxiliares todavía no alimentan a consolidate: las bios se
     # joinean recién en features.py. La dependencia se declara igual para que
     # el bronce quede completo antes de pasar a plata.
     consolidado = consolidate(bronces)
+    consolidado_challenger = consolidate_challenger(bronces_challenger)
+    consolidado_quali = consolidate_quali(bronces_quali)
     auxiliares >> consolidado
+    auxiliares >> consolidado_challenger
+    auxiliares >> consolidado_quali
 
     jugadores = build_player_dataset(consolidado)
-    save(validate(consolidado, jugadores))
+    save(validate(consolidado, jugadores, consolidado_challenger, consolidado_quali))
 
 
 atp_ingest()
