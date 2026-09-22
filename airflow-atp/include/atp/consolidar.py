@@ -22,7 +22,8 @@ def consolidar(rutas: list[Path]) -> pd.DataFrame:
     marcos = []
     for ruta in sorted(rutas):
         df = pd.read_csv(ruta, dtype=str, encoding="utf-8", encoding_errors="replace")
-        df["anio_archivo"] = int(ruta.stem)
+        anio_str = ruta.stem.split("_")[0]
+        df["anio_archivo"] = int(anio_str) if anio_str.isdigit() else None
         marcos.append(df)
 
     partidos = pd.concat(marcos, ignore_index=True, sort=False)

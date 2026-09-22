@@ -14,7 +14,7 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from atp import dataset_jugadores
+from atp import consolidar, dataset_jugadores
 
 
 # ---------------------------------------------------------------------------
@@ -173,42 +173,57 @@ class TestCarpetExcluido:
 # ---------------------------------------------------------------------------
 
 class TestMinimoPartidos:
-    """Jugadores con menos de 20 partidos validos deben quedar excluidos."""
+    """Jugadores con menos de 3 partidos validos deben quedar excluidos."""
 
-    def test_19_partidos_excluido(self):
-        """Jugador con 19 partidos queda fuera."""
-        partidos = _generar_partidos("X1", "Y1", 19, surface="Hard")
+    def test_2_partidos_excluido(self):
+        """Jugador con 2 partidos queda fuera."""
+        partidos = _generar_partidos("X1", "Y1", 2, surface="Hard")
         df = pd.DataFrame(partidos)
         df = dataset_jugadores.normalizar_superficies(df)
         df = dataset_jugadores._agregar_sets_games(df)
         participaciones = dataset_jugadores.unificar_participaciones(df)
         totales = dataset_jugadores.calcular_estadisticas_totales(participaciones)
-        resultado = dataset_jugadores.filtrar_minimo_partidos(totales, minimo=20)
+        resultado = dataset_jugadores.filtrar_minimo_partidos(totales, minimo=3)
         assert "X1" not in resultado.index
 
-    def test_20_partidos_incluido(self):
-        """Jugador con 20 partidos queda incluido."""
-        partidos = _generar_partidos("X2", "Y2", 20, surface="Hard")
+    def test_3_partidos_incluido(self):
+        """Jugador con 3 partidos queda incluido."""
+        partidos = _generar_partidos("X2", "Y2", 3, surface="Hard")
         df = pd.DataFrame(partidos)
         df = dataset_jugadores.normalizar_superficies(df)
         df = dataset_jugadores._agregar_sets_games(df)
         participaciones = dataset_jugadores.unificar_participaciones(df)
         totales = dataset_jugadores.calcular_estadisticas_totales(participaciones)
-        resultado = dataset_jugadores.filtrar_minimo_partidos(totales, minimo=20)
+        resultado = dataset_jugadores.filtrar_minimo_partidos(totales, minimo=3)
         assert "X2" in resultado.index
 
-    def test_carpet_no_cuenta_para_minimo(self):
-        """Un jugador con 25 partidos pero 10 de Carpet solo tiene 15 validos."""
+    def test_filtro_por_defecto_es_3(self):
+        """El valor por defecto de filtrar_minimo_partidos es 3."""
         partidos = (
-            _generar_partidos("Z1", "W1", 15, surface="Hard")
-            + _generar_partidos("Z1", "W1", 10, surface="Carpet")
+            _generar_partidos("P_DOS", "OPP1", 2, surface="Hard")
+            + _generar_partidos("P_TRES", "OPP2", 3, surface="Clay")
         )
         df = pd.DataFrame(partidos)
         df = dataset_jugadores.normalizar_superficies(df)
         df = dataset_jugadores._agregar_sets_games(df)
         participaciones = dataset_jugadores.unificar_participaciones(df)
         totales = dataset_jugadores.calcular_estadisticas_totales(participaciones)
-        resultado = dataset_jugadores.filtrar_minimo_partidos(totales, minimo=20)
+        resultado = dataset_jugadores.filtrar_minimo_partidos(totales)
+        assert "P_DOS" not in resultado.index
+        assert "P_TRES" in resultado.index
+
+    def test_carpet_no_cuenta_para_minimo(self):
+        """Un jugador con 4 partidos pero 2 de Carpet solo tiene 2 validos."""
+        partidos = (
+            _generar_partidos("Z1", "W1", 2, surface="Hard")
+            + _generar_partidos("Z1", "W1", 2, surface="Carpet")
+        )
+        df = pd.DataFrame(partidos)
+        df = dataset_jugadores.normalizar_superficies(df)
+        df = dataset_jugadores._agregar_sets_games(df)
+        participaciones = dataset_jugadores.unificar_participaciones(df)
+        totales = dataset_jugadores.calcular_estadisticas_totales(participaciones)
+        resultado = dataset_jugadores.filtrar_minimo_partidos(totales, minimo=3)
         assert "Z1" not in resultado.index
 
 
@@ -386,3 +401,311 @@ class TestSinPorcentajes:
             if any(p in c.lower() for p in ("porcentaje", "pct", "percent", "ratio"))
         ]
         assert cols_pct == [], f"Columnas de porcentaje encontradas: {cols_pct}"
+
+
+# ---------------------------------------------------------------------------
+# Prueba 7 — Validacion del dataset (minimo 3 partidos)
+# ---------------------------------------------------------------------------
+
+class TestValidarDataset:
+    """Valida que validar_dataset verifique el minimo de 3 partidos."""
+
+    def _armar_dataset_valido(self) -> pd.DataFrame:
+        """Crea un dataset minimo valido para pasar todas las validaciones."""
+        cols_titulos = {}
+        for cat in dataset_jugadores.CATEGORIAS_TITULO.values():
+            for suf in dataset_jugadores.SUFIJOS_SUPERFICIE:
+                cols_titulos[f"titulos-{cat}-{suf}"] = [0]
+
+        data = {
+            "id-jugador": ["P001"],
+            "nombre-jugador": ["Test Player"],
+            "partidos-totales": [3],
+            "partidos-validos-totales": [3],
+            "victorias-totales": [2],
+            "derrotas-totales": [1],
+            "partidos-cemento": [3],
+            "partidos-validos-cemento": [3],
+            "victorias-cemento": [2],
+            "derrotas-cemento": [1],
+            "partidos-clay": [0],
+            "partidos-validos-clay": [0],
+            "victorias-clay": [0],
+            "derrotas-clay": [0],
+            "partidos-grass": [0],
+            "partidos-validos-grass": [0],
+            "victorias-grass": [0],
+            "derrotas-grass": [0],
+            **cols_titulos,
+        }
+        return pd.DataFrame(data)
+
+    def test_dataset_con_3_partidos_valida_ok(self):
+        df = self._armar_dataset_valido()
+        dataset_jugadores.validar_dataset(df)
+
+    def test_dataset_con_menos_de_3_partidos_falla(self):
+        df = self._armar_dataset_valido()
+        df["partidos-totales"] = [2]
+        with pytest.raises(ValueError, match=r"\[filtro\] 1 jugadores con menos de 3 partidos"):
+            dataset_jugadores.validar_dataset(df)
+
+
+# ---------------------------------------------------------------------------
+# Prueba 8 — Multiples archivos (Tour, Challenger, Quali)
+# ---------------------------------------------------------------------------
+
+class TestMultiplesArchivos:
+    """Verifica que partidos de distintos archivos se acumulen para alcanzar el minimo de 3."""
+
+    def test_jugador_con_partidos_en_quali_y_tour(self, tmp_path):
+        """2 partidos en quali + 1 en ATP Tour -> 3 partidos en total -> se incluye."""
+        # P_MULTI juega 2 partidos en Quali y 1 en ATP Tour
+        df_quali = pd.DataFrame([
+            _partido(tourney_id="2024-Q01", winner_id="P_MULTI", loser_id="OPP1", match_num=1),
+            _partido(tourney_id="2024-Q01", winner_id="P_MULTI", loser_id="OPP2", match_num=2),
+        ])
+        df_tour = pd.DataFrame([
+            _partido(tourney_id="2024-001", winner_id="P_MULTI", loser_id="OPP3", match_num=1),
+            # OPP_SOLO_TOUR tiene solo 1 partido
+            _partido(tourney_id="2024-001", winner_id="OPP4", loser_id="OPP_SOLO_TOUR", match_num=2),
+        ])
+
+        p_quali = tmp_path / "2024_atp_quali.csv"
+        p_tour = tmp_path / "2024.csv"
+        df_quali.to_csv(p_quali, index=False)
+        df_tour.to_csv(p_tour, index=False)
+
+        # Consolidar ambos archivos
+        consolidado = consolidar.consolidar([p_tour, p_quali])
+        
+        # Procesar con dataset_jugadores
+        df_norm = dataset_jugadores.normalizar_superficies(consolidado)
+        df_norm = dataset_jugadores._agregar_sets_games(df_norm)
+        participaciones = dataset_jugadores.unificar_participaciones(df_norm)
+        totales = dataset_jugadores.calcular_estadisticas_totales(participaciones)
+        
+        # P_MULTI jugo 3 partidos en total (2 quali + 1 tour)
+        assert totales.loc["P_MULTI", "partidos-totales"] == 3
+        # OPP_SOLO_TOUR jugo solo 1 partido
+        assert totales.loc["OPP_SOLO_TOUR", "partidos-totales"] == 1
+
+        filtrado = dataset_jugadores.filtrar_minimo_partidos(totales, minimo=3)
+        assert "P_MULTI" in filtrado.index
+        assert "OPP_SOLO_TOUR" not in filtrado.index
+
+
+# ---------------------------------------------------------------------------
+# Prueba 9 — Proteccion contra NaN y preservacion de 0 reales
+# ---------------------------------------------------------------------------
+
+class TestProteccionValoresFaltantes:
+    """Verifica el filtrado por partido y la preservacion estricta de NaN vs 0."""
+
+    def test_nan_en_stats_excluye_partido_de_stats_saque(self):
+        """Un partido con w_ace = NaN no debe sumar a aces ni a partidos validos."""
+        partidos = [
+            _partido(winner_id="P1", loser_id="P2", match_num=1, w_ace=5),
+            _partido(
+                winner_id="P1", loser_id="P2", match_num=2,
+                w_ace=float("nan"), w_df=float("nan"), w_svpt=float("nan"),
+                w_1stIn=float("nan"), w_1stWon=float("nan"), w_2ndWon=float("nan"),
+                w_SvGms=float("nan"), w_bpSaved=float("nan"), w_bpFaced=float("nan"),
+            ),
+            _partido(winner_id="P1", loser_id="P2", match_num=3, w_ace=7),
+        ]
+        df = pd.DataFrame(partidos)
+        df = dataset_jugadores.normalizar_superficies(df)
+        df = dataset_jugadores._agregar_sets_games(df)
+        participaciones = dataset_jugadores.unificar_participaciones(df)
+        totales = dataset_jugadores.calcular_estadisticas_totales(participaciones)
+
+        assert totales.loc["P1", "partidos-totales"] == 3
+        assert totales.loc["P1", "partidos-validos-totales"] == 2
+        assert totales.loc["P1", "aces-totales"] == 12  # 5 + 7, el NaN no suma 0 ni distorsiona
+
+    def test_cero_legitimo_se_preserva_como_dato_valido(self):
+        """Un partido con w_ace = 0 (y bloque completo) debe ser partido valido y sumar 0."""
+        partidos = [
+            _partido(winner_id="P1", loser_id="P2", match_num=1, w_ace=0),
+            _partido(winner_id="P1", loser_id="P2", match_num=2, w_ace=4),
+            _partido(winner_id="P1", loser_id="P2", match_num=3, w_ace=0),
+        ]
+        df = pd.DataFrame(partidos)
+        df = dataset_jugadores.normalizar_superficies(df)
+        df = dataset_jugadores._agregar_sets_games(df)
+        participaciones = dataset_jugadores.unificar_participaciones(df)
+        totales = dataset_jugadores.calcular_estadisticas_totales(participaciones)
+
+        assert totales.loc["P1", "partidos-totales"] == 3
+        assert totales.loc["P1", "partidos-validos-totales"] == 3
+        assert totales.loc["P1", "aces-totales"] == 4
+
+    def test_ejemplo_promedio_aces_4_partidos(self):
+        """Ejemplo exacto del usuario: 5, 8, NaN, 6 -> promedio = 19 / 3 = 6.333."""
+        partidos = [
+            _partido(winner_id="P1", loser_id="P2", match_num=1, w_ace=5),
+            _partido(winner_id="P1", loser_id="P2", match_num=2, w_ace=8),
+            _partido(
+                winner_id="P1", loser_id="P2", match_num=3,
+                w_ace=float("nan"), w_df=float("nan"), w_svpt=float("nan"),
+                w_1stIn=float("nan"), w_1stWon=float("nan"), w_2ndWon=float("nan"),
+                w_SvGms=float("nan"), w_bpSaved=float("nan"), w_bpFaced=float("nan"),
+            ),
+            _partido(winner_id="P1", loser_id="P2", match_num=4, w_ace=6),
+        ]
+        df = pd.DataFrame(partidos)
+        df = dataset_jugadores.normalizar_superficies(df)
+        df = dataset_jugadores._agregar_sets_games(df)
+        participaciones = dataset_jugadores.unificar_participaciones(df)
+        totales = dataset_jugadores.calcular_estadisticas_totales(participaciones)
+
+        assert totales.loc["P1", "partidos-totales"] == 4
+        assert totales.loc["P1", "partidos-validos-totales"] == 3
+        assert totales.loc["P1", "aces-totales"] == 19
+        promedio_aces = totales.loc["P1", "aces-totales"] / totales.loc["P1", "partidos-validos-totales"]
+        assert pytest.approx(promedio_aces, 0.01) == 6.33
+
+    def test_jugador_sin_estadisticas_tiene_nan_en_saque(self):
+        """Un jugador con 3 partidos donde ninguno tiene stats de saque queda con NaN (no 0)."""
+        partidos = [
+            _partido(
+                winner_id="P_NO_STATS", loser_id="P2", match_num=i,
+                w_ace=float("nan"), w_df=float("nan"), w_svpt=float("nan"),
+                w_1stIn=float("nan"), w_1stWon=float("nan"), w_2ndWon=float("nan"),
+                w_SvGms=float("nan"), w_bpSaved=float("nan"), w_bpFaced=float("nan"),
+            )
+            for i in range(1, 4)
+        ]
+        df = pd.DataFrame(partidos)
+        df = dataset_jugadores.normalizar_superficies(df)
+        df = dataset_jugadores._agregar_sets_games(df)
+        participaciones = dataset_jugadores.unificar_participaciones(df)
+        totales = dataset_jugadores.calcular_estadisticas_totales(participaciones)
+
+        assert totales.loc["P_NO_STATS", "partidos-totales"] == 3
+        assert totales.loc["P_NO_STATS", "partidos-validos-totales"] == 0
+        assert pd.isna(totales.loc["P_NO_STATS", "aces-totales"])
+
+    def test_bloque_parcial_incompleto_se_descarta(self):
+        """Si falta una sola estadistica del bloque (ej. w_svpt = NaN), se descarta el partido de las stats."""
+        partidos = [
+            _partido(winner_id="P1", loser_id="P2", match_num=1, w_ace=5, w_svpt=float("nan")),
+            _partido(winner_id="P1", loser_id="P2", match_num=2, w_ace=4, w_svpt=60),
+            _partido(winner_id="P1", loser_id="P2", match_num=3, w_ace=3, w_svpt=55),
+        ]
+        df = pd.DataFrame(partidos)
+        df = dataset_jugadores.normalizar_superficies(df)
+        df = dataset_jugadores._agregar_sets_games(df)
+        participaciones = dataset_jugadores.unificar_participaciones(df)
+        totales = dataset_jugadores.calcular_estadisticas_totales(participaciones)
+
+        assert totales.loc["P1", "partidos-totales"] == 3
+        assert totales.loc["P1", "partidos-validos-totales"] == 2
+        # El primer partido tenia w_ace=5 pero w_svpt=NaN -> no cuenta, total = 4 + 3 = 7
+        assert totales.loc["P1", "aces-totales"] == 7
+
+    def test_separacion_estricta_ganador_perdedor(self):
+        """Ganador y perdedor reciben exclusivamente sus estadisticas w_* y l_*."""
+        partidos = [
+            _partido(
+                winner_id="WINNER", loser_id="LOSER", match_num=1,
+                w_ace=10, l_ace=2,
+            ),
+            _partido(
+                winner_id="WINNER", loser_id="LOSER", match_num=2,
+                w_ace=8, l_ace=1,
+            ),
+            _partido(
+                winner_id="WINNER", loser_id="LOSER", match_num=3,
+                w_ace=12, l_ace=3,
+            ),
+        ]
+        df = pd.DataFrame(partidos)
+        df = dataset_jugadores.normalizar_superficies(df)
+        df = dataset_jugadores._agregar_sets_games(df)
+        participaciones = dataset_jugadores.unificar_participaciones(df)
+        totales = dataset_jugadores.calcular_estadisticas_totales(participaciones)
+
+        assert totales.loc["WINNER", "victorias-totales"] == 3
+        assert totales.loc["WINNER", "derrotas-totales"] == 0
+        assert totales.loc["WINNER", "aces-totales"] == 30
+
+        assert totales.loc["LOSER", "victorias-totales"] == 0
+        assert totales.loc["LOSER", "derrotas-totales"] == 3
+        assert totales.loc["LOSER", "aces-totales"] == 6
+
+    def test_consistencia_partidos_validos_superficies(self):
+        """partidos-validos-totales debe ser igual a la suma por superficie."""
+        partidos = (
+            _generar_partidos("M1", "M2", 5, surface="Hard")
+            + _generar_partidos("M1", "M3", 3, surface="Clay")
+            + _generar_partidos("M1", "M4", 2, surface="Grass")
+        )
+        df = pd.DataFrame(partidos)
+        df = dataset_jugadores.normalizar_superficies(df)
+        df = dataset_jugadores._agregar_sets_games(df)
+        participaciones = dataset_jugadores.unificar_participaciones(df)
+
+        totales = dataset_jugadores.calcular_estadisticas_totales(participaciones)
+        por_sup = dataset_jugadores.calcular_estadisticas_por_superficie(participaciones)
+        stats = totales.join(por_sup, how="left").fillna(0)
+
+        assert stats.loc["M1", "partidos-validos-totales"] == 10
+        suma_validos = (
+            stats.loc["M1", "partidos-validos-cemento"]
+            + stats.loc["M1", "partidos-validos-clay"]
+            + stats.loc["M1", "partidos-validos-grass"]
+        )
+        assert stats.loc["M1", "partidos-validos-totales"] == suma_validos
+
+    def test_jugador_sin_stats_protegidas_es_excluido_por_filtro(self):
+        """Un jugador con 5 partidos pero 0 partidos validos con stats debe ser excluido."""
+        partidos = [
+            _partido(
+                winner_id="P_NO_STATS", loser_id="P_VALID", match_num=i,
+                w_ace=float("nan"), w_df=float("nan"), w_svpt=float("nan"),
+                w_1stIn=float("nan"), w_1stWon=float("nan"), w_2ndWon=float("nan"),
+                w_SvGms=float("nan"), w_bpSaved=float("nan"), w_bpFaced=float("nan"),
+                l_ace=5, l_df=2, l_svpt=60, l_1stIn=40, l_1stWon=30, l_2ndWon=10, l_SvGms=10, l_bpSaved=2, l_bpFaced=4,
+            )
+            for i in range(1, 6)
+        ]
+        df = pd.DataFrame(partidos)
+        df = dataset_jugadores.normalizar_superficies(df)
+        df = dataset_jugadores._agregar_sets_games(df)
+        participaciones = dataset_jugadores.unificar_participaciones(df)
+        totales = dataset_jugadores.calcular_estadisticas_totales(participaciones)
+
+        assert totales.loc["P_NO_STATS", "partidos-totales"] == 5
+        assert totales.loc["P_NO_STATS", "partidos-validos-totales"] == 0
+        assert totales.loc["P_VALID", "partidos-totales"] == 5
+        assert totales.loc["P_VALID", "partidos-validos-totales"] == 5
+
+        filtrado = dataset_jugadores.filtrar_minimo_partidos(totales, minimo=3)
+        assert "P_VALID" in filtrado.index
+        assert "P_NO_STATS" not in filtrado.index
+
+    def test_informe_calidad_incluye_todas_las_columnas(self):
+        """El informe de calidad debe contener exactamente todas las columnas del dataset."""
+        df_dummy = pd.DataFrame({
+            "col1": [1, 2, float("nan")],
+            "col2": ["a", "b", "c"],
+            "col3": [float("nan"), float("nan"), float("nan")],
+            "col4": [10.5, 20.0, 30.5],
+        })
+        informe = dataset_jugadores.informe_calidad_jugadores(df_dummy)
+        assert set(informe["columna"]) == set(df_dummy.columns)
+        assert len(informe) == len(df_dummy.columns)
+        
+        # Verificar conteo de nulos
+        fila_col1 = informe[informe["columna"] == "col1"].iloc[0]
+        assert fila_col1["nulos"] == 1
+        assert fila_col1["pct_nulos"] == 33.33
+
+        fila_col3 = informe[informe["columna"] == "col3"].iloc[0]
+        assert fila_col3["nulos"] == 3
+        assert fila_col3["pct_nulos"] == 100.0
+
+
+

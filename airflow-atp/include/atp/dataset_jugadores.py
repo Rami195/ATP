@@ -124,8 +124,17 @@ def _agregar_sets_games(df: pd.DataFrame) -> pd.DataFrame:
 # Preparacion de participaciones
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Preparacion de participaciones
+# ---------------------------------------------------------------------------
+
 def preparar_participaciones_ganador(df: pd.DataFrame) -> pd.DataFrame:
-    """Crea la vista del ganador con columnas unificadas."""
+    """Crea la vista del ganador con columnas unificadas.
+
+    Verifica que el bloque completo de 9 estadisticas de servicio este
+    presente y sea valido (>= 0). Si alguna estadistica falta o es invalida,
+    las estadisticas de saque se establecen en NaN y partidos_validos = 0.
+    """
     renombre = {
         "winner_id": "id_jugador",
         "minutes": "minutos",
@@ -137,14 +146,45 @@ def preparar_participaciones_ganador(df: pd.DataFrame) -> pd.DataFrame:
     for stat_orig, _ in STATS_SAQUE:
         renombre[f"w_{stat_orig}"] = stat_orig
 
+    cols_stats_w = [f"w_{stat_orig}" for stat_orig, _ in STATS_SAQUE]
+    columnas_presentes = [c for c in cols_stats_w if c in df.columns]
+
+    if len(columnas_presentes) == len(cols_stats_w):
+        stats_completas = df[cols_stats_w].notna().all(axis=1)
+        for c in cols_stats_w:
+            val_num = pd.to_numeric(df[c], errors="coerce")
+            stats_completas = stats_completas & val_num.notna() & (val_num >= 0)
+    else:
+        stats_completas = pd.Series(False, index=df.index)
+
+    df_temp = df.copy()
+    for col in list(renombre.keys()):
+        if col not in df_temp.columns:
+            df_temp[col] = float("nan")
+
     columnas = list(renombre.keys()) + ["surface", "tourney_id", "round", "tourney_level"]
-    out = df[columnas].rename(columns=renombre).copy()
+    out = df_temp[columnas].rename(columns=renombre).copy()
     out["victoria"] = 1
+    out["partidos_validos"] = stats_completas.astype(int)
+
+    # Convertir estadisticas de saque a numerico exacto conservando ceros reales
+    stats_cols = [stat_orig for stat_orig, _ in STATS_SAQUE]
+    for sc in stats_cols:
+        out[sc] = pd.to_numeric(out[sc], errors="coerce")
+
+    # Excluir de las estadisticas de saque los partidos con bloque incompleto
+    out.loc[~stats_completas, stats_cols] = float("nan")
+
     return out
 
 
 def preparar_participaciones_perdedor(df: pd.DataFrame) -> pd.DataFrame:
-    """Crea la vista del perdedor con columnas unificadas."""
+    """Crea la vista del perdedor con columnas unificadas.
+
+    Verifica que el bloque completo de 9 estadisticas de servicio este
+    presente y sea valido (>= 0). Si alguna estadistica falta o es invalida,
+    las estadisticas de saque se establecen en NaN y partidos_validos = 0.
+    """
     renombre = {
         "loser_id": "id_jugador",
         "minutes": "minutos",
@@ -156,9 +196,35 @@ def preparar_participaciones_perdedor(df: pd.DataFrame) -> pd.DataFrame:
     for stat_orig, _ in STATS_SAQUE:
         renombre[f"l_{stat_orig}"] = stat_orig
 
+    cols_stats_l = [f"l_{stat_orig}" for stat_orig, _ in STATS_SAQUE]
+    columnas_presentes = [c for c in cols_stats_l if c in df.columns]
+
+    if len(columnas_presentes) == len(cols_stats_l):
+        stats_completas = df[cols_stats_l].notna().all(axis=1)
+        for c in cols_stats_l:
+            val_num = pd.to_numeric(df[c], errors="coerce")
+            stats_completas = stats_completas & val_num.notna() & (val_num >= 0)
+    else:
+        stats_completas = pd.Series(False, index=df.index)
+
+    df_temp = df.copy()
+    for col in list(renombre.keys()):
+        if col not in df_temp.columns:
+            df_temp[col] = float("nan")
+
     columnas = list(renombre.keys()) + ["surface", "tourney_id", "round", "tourney_level"]
-    out = df[columnas].rename(columns=renombre).copy()
+    out = df_temp[columnas].rename(columns=renombre).copy()
     out["victoria"] = 0
+    out["partidos_validos"] = stats_completas.astype(int)
+
+    # Convertir estadisticas de saque a numerico exacto conservando ceros reales
+    stats_cols = [stat_orig for stat_orig, _ in STATS_SAQUE]
+    for sc in stats_cols:
+        out[sc] = pd.to_numeric(out[sc], errors="coerce")
+
+    # Excluir de las estadisticas de saque los partidos con bloque incompleto
+    out.loc[~stats_completas, stats_cols] = float("nan")
+
     return out
 
 
@@ -167,7 +233,11 @@ def unificar_participaciones(df: pd.DataFrame) -> pd.DataFrame:
     ganadores = preparar_participaciones_ganador(df)
     perdedores = preparar_participaciones_perdedor(df)
     participaciones = pd.concat([ganadores, perdedores], ignore_index=True)
-    log.info("Participaciones unificadas: %d filas", len(participaciones))
+    validos = int(participaciones["partidos_validos"].sum())
+    log.info(
+        "Participaciones unificadas: %d filas (%d con estadisticas de servicio completas)",
+        len(participaciones), validos,
+    )
     return participaciones
 
 
@@ -177,7 +247,7 @@ def unificar_participaciones(df: pd.DataFrame) -> pd.DataFrame:
 
 def _columnas_agregables() -> list[str]:
     """Devuelve las columnas numericas que se suman por jugador."""
-    cols = ["victoria", "sets_ganados", "sets_perdidos",
+    cols = ["victoria", "partidos_validos", "sets_ganados", "sets_perdidos",
             "games_ganados", "games_perdidos", "minutos"]
     for stat_orig, _ in STATS_SAQUE:
         cols.append(stat_orig)
@@ -188,6 +258,7 @@ def _renombrar_stats_espanol(df: pd.DataFrame, sufijo: str) -> pd.DataFrame:
     """Renombra columnas internas al formato en espanol con guion medio."""
     renombre = {
         "victoria": f"victorias-{sufijo}",
+        "partidos_validos": f"partidos-validos-{sufijo}",
         "sets_ganados": f"sets-ganados-{sufijo}",
         "sets_perdidos": f"sets-perdidos-{sufijo}",
         "games_ganados": f"games-ganados-{sufijo}",
@@ -201,9 +272,15 @@ def _renombrar_stats_espanol(df: pd.DataFrame, sufijo: str) -> pd.DataFrame:
 
 def calcular_estadisticas_totales(participaciones: pd.DataFrame) -> pd.DataFrame:
     """Calcula estadisticas acumuladas sobre todos los partidos validos."""
-    cols = _columnas_agregables()
-    totales = participaciones.groupby("id_jugador")[cols].sum()
+    cols_conteo = ["victoria", "partidos_validos", "sets_ganados", "sets_perdidos",
+                   "games_ganados", "games_perdidos", "minutos"]
+    cols_saque = [stat_orig for stat_orig, _ in STATS_SAQUE]
 
+    totales_conteo = participaciones.groupby("id_jugador")[cols_conteo].sum(min_count=0)
+    # min_count=1 asegura que si un jugador tiene 0 observaciones de saque, el total sea NaN (no 0.0)
+    totales_saque = participaciones.groupby("id_jugador")[cols_saque].sum(min_count=1)
+
+    totales = totales_conteo.join(totales_saque)
     totales = _renombrar_stats_espanol(totales, "totales")
 
     # Partidos totales y derrotas
@@ -216,7 +293,10 @@ def calcular_estadisticas_totales(participaciones: pd.DataFrame) -> pd.DataFrame
 
 def calcular_estadisticas_por_superficie(participaciones: pd.DataFrame) -> pd.DataFrame:
     """Calcula estadisticas acumuladas por superficie."""
-    cols = _columnas_agregables()
+    cols_conteo = ["victoria", "partidos_validos", "sets_ganados", "sets_perdidos",
+                   "games_ganados", "games_perdidos", "minutos"]
+    cols_saque = [stat_orig for stat_orig, _ in STATS_SAQUE]
+
     superficies_presentes = sorted(
         s for s in participaciones["surface"].unique() if s in SUPERFICIES_VALIDAS
     )
@@ -224,7 +304,10 @@ def calcular_estadisticas_por_superficie(participaciones: pd.DataFrame) -> pd.Da
     partes = []
     for superficie in superficies_presentes:
         sub = participaciones[participaciones["surface"] == superficie]
-        stats = sub.groupby("id_jugador")[cols].sum()
+        stats_conteo = sub.groupby("id_jugador")[cols_conteo].sum(min_count=0)
+        stats_saque = sub.groupby("id_jugador")[cols_saque].sum(min_count=1)
+        stats = stats_conteo.join(stats_saque)
+
         suf = MAPEO_SUPERFICIES.get(superficie, superficie.lower())
         stats = _renombrar_stats_espanol(stats, suf)
 
@@ -358,14 +441,22 @@ def cargar_informacion_jugadores(ruta_bios: Path) -> pd.DataFrame:
 
 def filtrar_minimo_partidos(
     stats: pd.DataFrame,
-    minimo: int = 5,
+    minimo: int = 3,
 ) -> pd.DataFrame:
-    """Excluye jugadores con menos de `minimo` partidos validos."""
+    """Excluye jugadores con menos de `minimo` partidos totales o sin estadisticas protegidas validas."""
     antes = len(stats)
-    stats = stats[stats["partidos-totales"] >= minimo].copy()
+    cond_minimo = stats["partidos-totales"] >= minimo
+
+    if "partidos-validos-totales" in stats.columns:
+        cond_stats = stats["partidos-validos-totales"] > 0
+    else:
+        cols_saque = [f"{s[1]}-totales" for s in STATS_SAQUE if f"{s[1]}-totales" in stats.columns]
+        cond_stats = stats[cols_saque].notna().any(axis=1) if cols_saque else pd.Series(True, index=stats.index)
+
+    stats = stats[cond_minimo & cond_stats].copy()
     excluidos = antes - len(stats)
     log.info(
-        "Filtro de minimo %d partidos: %d jugadores excluidos, %d incluidos",
+        "Filtro de jugadores (minimo %d partidos y con estadisticas validas): %d excluidos, %d incluidos",
         minimo, excluidos, len(stats),
     )
     return stats
@@ -403,12 +494,20 @@ def validar_dataset(df: pd.DataFrame) -> None:
         if "[unicidad]" not in str(problemas):
             problemas.append("[unicidad] id-jugador no es unico")
 
-    # 3. No hay jugadores con menos de 5 partidos
-    bajo_minimo = df[df["partidos-totales"] < 5]
+    # 3. No hay jugadores con menos de 3 partidos
+    bajo_minimo = df[df["partidos-totales"] < 3]
     if len(bajo_minimo):
         problemas.append(
-            f"[filtro] {len(bajo_minimo)} jugadores con menos de 5 partidos"
+            f"[filtro] {len(bajo_minimo)} jugadores con menos de 3 partidos"
         )
+
+    # 3b. No hay jugadores sin estadisticas protegidas validas
+    if "partidos-validos-totales" in df.columns:
+        sin_stats = df[df["partidos-validos-totales"] <= 0]
+        if len(sin_stats):
+            problemas.append(
+                f"[stats_protegidas] {len(sin_stats)} jugadores sin estadisticas de saque validas"
+            )
 
     # 4. No hay estadisticas de Carpet
     cols_carpet = [c for c in df.columns if "carpet" in c.lower()]
@@ -452,7 +551,7 @@ def validar_dataset(df: pd.DataFrame) -> None:
             problemas.append(f"[titulos] valores negativos en {col}")
 
     # 10. Totales consistentes con suma de superficies
-    for metrica in ("partidos", "victorias", "derrotas"):
+    for metrica in ("partidos", "victorias", "derrotas", "partidos-validos"):
         col_total = f"{metrica}-totales"
         cols_sup = [f"{metrica}-{s}" for s in SUFIJOS_SUPERFICIE]
         if col_total in df.columns and all(c in df.columns for c in cols_sup):
@@ -493,28 +592,22 @@ def guardar_dataset(df: pd.DataFrame, destino: Path) -> Path:
 
 
 def informe_calidad_jugadores(df: pd.DataFrame) -> pd.DataFrame:
-    """Porcentaje de nulos por columna clave del dataset de jugadores.
+    """Porcentaje de nulos para todas las columnas del dataset de jugadores.
 
     Complementa ``consolidar.informe_calidad`` (que opera sobre partidos)
-    con un reporte equivalente para el dataset agregado por jugador.
+    con un reporte exhaustivo para el dataset agregado por jugador.
     """
-    columnas = [
-        "id-jugador", "nombre-jugador", "fecha-nacimiento", "altura-cm",
-        "peso-kg", "mano-dominante", "tipo-reves", "año-profesional", "pais",
-        "partidos-totales", "victorias-totales", "aces-totales",
-        "partidos-cemento", "partidos-clay", "partidos-grass",
-    ]
-    columnas = [c for c in columnas if c in df.columns]
+    columnas = list(df.columns)
 
     informe = pd.DataFrame({
         "columna": columnas,
         "nulos": [int(df[c].isna().sum()) for c in columnas],
     })
-    informe["pct_nulos"] = (informe["nulos"] / len(df) * 100).round(2)
+    informe["pct_nulos"] = (informe["nulos"] / len(df) * 100).round(2) if len(df) > 0 else 0.0
 
-    print("\n      Nulos por columna clave — dataset jugadores (top 6):")
-    for _, fila in informe.sort_values("pct_nulos", ascending=False).head(6).iterrows():
-        print(f"        {fila['columna']:<24} {fila['pct_nulos']:>6.2f} %")
+    print(f"\n      Nulos por columna — dataset jugadores (total {len(columnas)} columnas):")
+    for _, fila in informe.sort_values("pct_nulos", ascending=False).head(15).iterrows():
+        print(f"        {fila['columna']:<35} {fila['nulos']:>6} ({fila['pct_nulos']:>6.2f} %)")
     print()
 
     return informe
@@ -564,17 +657,29 @@ def build_player_dataset(ruta_consolidado: str | Path) -> str:
     cols_titulos = [c for c in stats.columns if c.startswith("titulos-")]
     stats[cols_titulos] = stats[cols_titulos].fillna(0).astype(int)
 
-    # Rellenar estadisticas de superficie faltantes con 0
-    # (jugadores que no jugaron en alguna superficie)
-    cols_superficie = [
-        c for c in stats.columns
-        if any(c.endswith(f"-{s}") for s in SUFIJOS_SUPERFICIE)
-        and not c.startswith("titulos-")
-    ]
-    stats[cols_superficie] = stats[cols_superficie].fillna(0)
+    # Rellenar conteos de partidos/victorias/derrotas/games/sets/minutos en superficies faltantes con 0
+    # (jugadores que no jugaron en alguna superficie).
+    # ¡IMPORTANTE!: Las estadisticas de servicio (aces, dobles-faltas, etc.) NO se rellenan con 0,
+    # quedan como NaN para no falsear el perfil del jugador.
+    for suf in SUFIJOS_SUPERFICIE:
+        cols_conteo_suf = [
+            f"partidos-{suf}", f"victorias-{suf}", f"derrotas-{suf}",
+            f"partidos-validos-{suf}", f"sets-ganados-{suf}", f"sets-perdidos-{suf}",
+            f"games-ganados-{suf}", f"games-perdidos-{suf}", f"minutos-{suf}",
+        ]
+        for col in cols_conteo_suf:
+            if col in stats.columns:
+                stats[col] = stats[col].fillna(0)
+            else:
+                stats[col] = 0
 
-    # 9. Filtrar jugadores con menos de 5 partidos
-    stats = filtrar_minimo_partidos(stats, minimo=5)
+        for stat_orig, stat_es in STATS_SAQUE:
+            col_stat = f"{stat_es}-{suf}"
+            if col_stat not in stats.columns:
+                stats[col_stat] = float("nan")
+
+    # 9. Filtrar jugadores con menos de 3 partidos
+    stats = filtrar_minimo_partidos(stats, minimo=3)
 
     # 10. Cargar informacion personal
     ruta_bios = config.DIR_CRUDO / config.ARCHIVO_BIOS

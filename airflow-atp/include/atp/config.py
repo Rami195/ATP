@@ -32,6 +32,7 @@ DIR_PROCESADO = OUTPUT_DIR / "silver"
 BASE_TML = "https://stats.tennismylife.org/data"
 
 ANIO_MIN_DISPONIBLE = 1968
+ANIO_MIN_QUALI = 2007
 ANIO_DESDE_DEFECTO = 2000
 ANIO_HASTA_DEFECTO = 2025  # 2026 esta incompleto en la fuente, ver README
 
@@ -41,6 +42,7 @@ ARCHIVO_BIOS = "ATP_Database.csv"
 
 # Torneos en curso, fuera de los CSV anuales.
 ARCHIVO_EN_CURSO = "ongoing_tourneys.csv"
+ARCHIVO_EN_CURSO_CHALLENGER = "ch_ongoing_tourneys.csv"
 
 # --- Descarga ------------------------------------------------------------
 USER_AGENT = "proyecto-integrador-utnfrm-cienciadatos/1.0 (uso academico)"

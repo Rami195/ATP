@@ -135,6 +135,16 @@ AVISO_PCT_NULOS = 0.10
             title="Última temporada",
             description="Última temporada a descargar. 2026 está incompleta en la fuente.",
         ),
+        "incluir_challengers": Param(
+            False, type="boolean",
+            title="Incluir torneos Challenger",
+            description="Descarga e incluye los partidos del circuito ATP Challenger.",
+        ),
+        "incluir_qualis": Param(
+            False, type="boolean",
+            title="Incluir fases de clasificación (Qualifying)",
+            description="Descarga e incluye los partidos de clasificación ATP (disponible desde 2007).",
+        ),
         "forzar_descarga": Param(
             False, type="boolean",
             title="Forzar la descarga",
@@ -173,6 +183,18 @@ def atp_ingest():
         return str(destino)
 
     @task
+    def land_bronze_extras(anios: list[int], **context) -> list[str]:
+        """**Capa bronce extras**: baja los CSV de Challenger y/o Qualifying si fueron solicitados."""
+        params = context["params"]
+        rutas = descarga.descargar_extras(
+            anios=anios,
+            incluir_challengers=params.get("incluir_challengers", False),
+            incluir_qualis=params.get("incluir_qualis", False),
+            forzar=params.get("forzar_descarga", False),
+        )
+        return [str(p) for p in rutas]
+
+    @task
     def land_bronze_aux(**context) -> list[str]:
         """Bronce de las tablas auxiliares (biografías, torneos en curso).
 
@@ -184,14 +206,17 @@ def atp_ingest():
         return [str(p) for p in rutas.values()]
 
     @task
-    def consolidate(rutas_temporadas: list[str]) -> str:
-        """**Capa plata**: une las temporadas en una tabla partido-nivel.
+    def consolidate(rutas_temporadas: list[str], rutas_extras: list[str] | None = None) -> str:
+        """**Capa plata**: une las temporadas (ATP Tour, Challenger, Quali) en una tabla partido-nivel.
 
         No toca la red — todo lo que necesita ya está en el bronce. Tipa
         columnas, deduplica y arma `id_partido` único (ver
         `include/atp/consolidar.py`).
         """
-        partidos = consolidar.consolidar([Path(r) for r in rutas_temporadas])
+        rutas = [Path(r) for r in rutas_temporadas]
+        if rutas_extras:
+            rutas.extend(Path(r) for r in rutas_extras if r)
+        partidos = consolidar.consolidar(rutas)
 
         config.DIR_PROCESADO.mkdir(parents=True, exist_ok=True)
         destino = config.DIR_PROCESADO / "partidos_consolidado.csv"
@@ -401,12 +426,13 @@ def atp_ingest():
 
     anios = discover_seasons()
     bronces = land_bronze.expand(anio=anios)
+    extras = land_bronze_extras(anios=anios)
     auxiliares = land_bronze_aux()
 
     # Las tablas auxiliares todavía no alimentan a consolidate: las bios se
     # joinean recién en features.py. La dependencia se declara igual para que
     # el bronce quede completo antes de pasar a plata.
-    consolidado = consolidate(bronces)
+    consolidado = consolidate(rutas_temporadas=bronces, rutas_extras=extras)
     auxiliares >> consolidado
 
     jugadores = build_player_dataset(consolidado)

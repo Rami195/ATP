@@ -59,7 +59,7 @@ def descargar_temporada(
     forzar: bool = False,
     dir_destino: Path | None = None,
 ) -> Path:
-    """Descarga (o reusa la cache de) el CSV de una unica temporada.
+    """Descarga (o reusa la cache de) el CSV de una unica temporada ATP Tour.
 
     Es la version de `descargar_anios` para una tarea mapeada de Airflow: cada
     instancia de `land_bronze` baja un anio, asi que necesita esta unidad mas
@@ -75,6 +75,87 @@ def descargar_temporada(
     if not destino.exists():
         raise RuntimeError(f"No se pudo descargar la temporada {anio}: {mensaje}")
     return destino
+
+
+def descargar_temporada_challenger(
+    anio: int,
+    forzar: bool = False,
+    dir_destino: Path | None = None,
+) -> Path:
+    """Descarga (o reusa la cache de) el CSV de una temporada Challenger."""
+    dir_destino = dir_destino or config.DIR_CRUDO
+    dir_destino.mkdir(parents=True, exist_ok=True)
+    nombre_archivo = f"{anio}_challenger.csv"
+    destino = dir_destino / nombre_archivo
+
+    _, mensaje = _descargar_archivo(f"{config.BASE_TML}/{nombre_archivo}", destino, forzar)
+    print(mensaje)
+
+    if not destino.exists():
+        raise RuntimeError(f"No se pudo descargar la temporada challenger {anio}: {mensaje}")
+    return destino
+
+
+def descargar_temporada_quali(
+    anio: int,
+    forzar: bool = False,
+    dir_destino: Path | None = None,
+) -> Path | None:
+    """Descarga (o reusa la cache de) el CSV de una temporada ATP Qualifying (disponible desde 2007)."""
+    if anio < config.ANIO_MIN_QUALI:
+        print(f"  INFO    Qualifying no disponible para el anio {anio} (disponible desde {config.ANIO_MIN_QUALI})")
+        return None
+
+    dir_destino = dir_destino or config.DIR_CRUDO
+    dir_destino.mkdir(parents=True, exist_ok=True)
+    nombre_archivo = f"{anio}_atp_quali.csv"
+    destino = dir_destino / nombre_archivo
+    url = f"{config.BASE_TML}/atp_quali/{nombre_archivo}"
+
+    _, mensaje = _descargar_archivo(url, destino, forzar)
+    print(mensaje)
+
+    if not destino.exists():
+        raise RuntimeError(f"No se pudo descargar la temporada qualifying {anio}: {mensaje}")
+    return destino
+
+
+def descargar_extras(
+    anios: list[int],
+    incluir_challengers: bool = False,
+    incluir_qualis: bool = False,
+    forzar: bool = False,
+    dir_destino: Path | None = None,
+) -> list[Path]:
+    """Descarga los CSV de temporadas Challenger y/o Qualifying segun los parametros."""
+    rutas: list[Path] = []
+    if not incluir_challengers and not incluir_qualis:
+        return rutas
+
+    dir_destino = dir_destino or config.DIR_CRUDO
+    dir_destino.mkdir(parents=True, exist_ok=True)
+
+    if incluir_challengers:
+        print(f"[Bronce Extras] Descargando temporadas Challenger...")
+        for anio in sorted(anios):
+            try:
+                p = descargar_temporada_challenger(anio, forzar=forzar, dir_destino=dir_destino)
+                if p and p.exists():
+                    rutas.append(p)
+            except Exception as exc:
+                print(f"  AVISO   No se pudo descargar challenger {anio}: {exc}")
+
+    if incluir_qualis:
+        print(f"[Bronce Extras] Descargando temporadas Qualifying...")
+        for anio in sorted(anios):
+            try:
+                p = descargar_temporada_quali(anio, forzar=forzar, dir_destino=dir_destino)
+                if p and p.exists():
+                    rutas.append(p)
+            except Exception as exc:
+                print(f"  AVISO   No se pudo descargar qualifying {anio}: {exc}")
+
+    return rutas
 
 
 def descargar_anios(
