@@ -45,6 +45,7 @@ import logging
 from pathlib import Path
 
 import pendulum
+from airflow.exceptions import AirflowSkipException
 from airflow.sdk import Param, dag, task
 
 from atp import config, consolidar, dataset_jugadores, descarga
@@ -76,8 +77,8 @@ RANGOS_PLAUSIBLES = {
     "loser_rank": (1, 2500),       # observado: 1 a 2.159
     "winner_ht": (140, 230),       # observado: 155 a 211 cm
     "loser_ht": (140, 230),
-    "winner_age": (14, 50),        # observado: 14,9 a 44,6 años
-    "loser_age": (14, 50),
+    "winner_age": (14, 60),        # observado: 14,9 a 57,4 años (incluye Challenger)
+    "loser_age": (14, 60),
 }
 
 # Dominios cerrados: un valor nuevo acá significa que la fuente cambió.
@@ -186,10 +187,15 @@ def atp_ingest():
     def land_bronze_extras(anios: list[int], **context) -> list[str]:
         """**Capa bronce extras**: baja los CSV de Challenger y/o Qualifying si fueron solicitados."""
         params = context["params"]
+        incluir_challengers = params.get("incluir_challengers", False)
+        incluir_qualis = params.get("incluir_qualis", False)
+        if not incluir_challengers and not incluir_qualis:
+            raise AirflowSkipException("No se solicitaron datos extras (Challenger ni Qualifying).")
+
         rutas = descarga.descargar_extras(
             anios=anios,
-            incluir_challengers=params.get("incluir_challengers", False),
-            incluir_qualis=params.get("incluir_qualis", False),
+            incluir_challengers=incluir_challengers,
+            incluir_qualis=incluir_qualis,
             forzar=params.get("forzar_descarga", False),
         )
         return [str(p) for p in rutas]
@@ -205,7 +211,7 @@ def atp_ingest():
         rutas = descarga.descargar_auxiliares(forzar=forzar)
         return [str(p) for p in rutas.values()]
 
-    @task
+    @task(trigger_rule="none_failed_min_one_success")
     def consolidate(rutas_temporadas: list[str], rutas_extras: list[str] | None = None) -> str:
         """**Capa plata**: une las temporadas (ATP Tour, Challenger, Quali) en una tabla partido-nivel.
 
