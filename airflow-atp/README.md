@@ -22,10 +22,12 @@ despausá `atp_ingest` y disparalo. Con los parámetros por defecto
 |---|---|---|
 | `discover_seasons` | — | Arma la lista de años a procesar según los parámetros de la corrida |
 | `land_bronze` (×26, una por año) | Bronce | Descarga el CSV de una temporada; si ya está en disco, no la vuelve a pedir |
+| `land_bronze_extras` | Bronce | Descarga Challenger y/o Qualifying cuando se habilitan esos parámetros |
 | `land_bronze_aux` | Bronce | Descarga las tablas auxiliares (biografías, torneos en curso) |
-| `consolidate` | Plata | Une las temporadas, tipa columnas, deduplica, arma `id_partido` único |
-| `validate` | — | Valida las 5 dimensiones de calidad (unicidad, completitud, precisión, consistencia, actualidad) con umbrales elegidos a partir del profiling. Si un chequeo crítico falla, `save` no corre. Los problemas menores quedan como avisos y no frenan |
-| `save` | — | Copia el dataset final a `atp_partidos_<fecha>.csv` |
+| `consolidate` | Plata | Une ATP Tour, Challenger y Qualifying, tipa columnas, deduplica y arma `id_partido` único |
+| `build_player_dataset` | Plata | Genera una fila por jugador con totales, tasas, cobertura y métricas de saque y devolución, generales y por superficie |
+| `validate` | — | Valida los datasets de partidos y jugadores. Si un chequeo crítico falla, `save` no corre |
+| `save` | — | Copia ambos productos a `atp_partidos_<fecha>.csv` y `atp_jugadores_<fecha>.csv` |
 
 ## Dónde queda todo
 
@@ -34,9 +36,19 @@ include/output/
 ├── bronze/                      # CSV crudos por temporada + auxiliares
 ├── silver/
 │   ├── partidos_consolidado.csv # un partido por fila (77.474 filas, 55 columnas)
-│   └── informe_calidad.csv      # % de nulos por columna clave
-└── atp_partidos_<fecha>.csv     # el entregable de la corrida
+│   ├── atp_jugadores.csv        # una fila por jugador
+│   ├── informe_calidad.csv      # calidad del consolidado de partidos
+│   └── informe_calidad_jugadores.csv
+├── atp_partidos_<fecha>.csv
+└── atp_jugadores_<fecha>.csv
 ```
+
+El Silver de jugadores conserva los conteos auditables y agrega tasas entre 0
+y 1. `partidos-validos-*` cuenta participaciones con el bloque de saque
+completo; `cobertura-saque-*` y `cobertura-resto-*` expresan esa disponibilidad
+sobre los partidos del jugador. Las métricas de devolución se derivan del
+saque del rival: puntos que el rival no ganó al sacar y break points que no
+logró salvar.
 
 ## La validación: qué se chequea y con qué umbral
 
@@ -95,7 +107,6 @@ los años que ya bajaron.
 
 ## Qué falta para las próximas entregas
 
-`src/features.py` de `proyecto-atp/` (formato jugador-partido, historial sin
-fuga, dataset A/B para modelado) queda **fuera de esta entrega a propósito**:
-son insumos de la Entrega 2/3, no del dataset crudo consolidado que pide la
-Entrega 1.
+Los perfiles congelados en el tiempo, el formato jugador A / jugador B, el
+objetivo `gana_a`, los clusters y las interacciones entre estilos quedan fuera
+del Silver. Son tablas auxiliares orientadas a las Entregas 2 y 3.

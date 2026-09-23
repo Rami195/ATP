@@ -418,8 +418,9 @@ def atp_ingest():
     def build_player_dataset(ruta_partidos: str) -> str:
         """Construye el dataset de jugadores ATP (una fila por jugador).
 
-        Lee el consolidado de partidos, agrega estadísticas totales y por
-        superficie, calcula títulos, y guarda el resultado en la capa plata.
+        Lee el consolidado de Tour, Challenger y Qualifying; agrega totales,
+        tasas, cobertura y estadísticas de saque/devolución generales y por
+        superficie; calcula títulos y guarda el resultado en la capa plata.
         Toda la lógica está en ``include/atp/dataset_jugadores.py``.
         """
         return dataset_jugadores.build_player_dataset(ruta_partidos)
@@ -429,9 +430,8 @@ def atp_ingest():
     extras = land_bronze_extras(anios=anios)
     auxiliares = land_bronze_aux()
 
-    # Las tablas auxiliares todavía no alimentan a consolidate: las bios se
-    # joinean recién en features.py. La dependencia se declara igual para que
-    # el bronce quede completo antes de pasar a plata.
+    # Las bios no forman parte del consolidado de partidos; se incorporan en
+    # build_player_dataset. La dependencia asegura que estén disponibles.
     consolidado = consolidate(rutas_temporadas=bronces, rutas_extras=extras)
     auxiliares >> consolidado
 

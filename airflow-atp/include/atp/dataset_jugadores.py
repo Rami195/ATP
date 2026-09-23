@@ -2,7 +2,7 @@
 
 Agrega las estadisticas de cada jugador a lo largo de todos sus partidos
 validos (excluyendo Carpet), separadas en totales y por superficie.
-Incluye titulos ganados por categoria y superficie.
+Incluye totales, tasas comparables, cobertura, saque, devolucion y titulos.
 
 El resultado es un unico CSV con una fila por jugador, guardado en la capa
 plata junto al consolidado de partidos.
@@ -42,6 +42,14 @@ STATS_SAQUE = [
     ("SvGms", "games-saque"),
     ("bpSaved", "break-points-salvados"),
     ("bpFaced", "break-points-enfrentados"),
+]
+
+# Metricas de devolucion derivadas de las estadisticas de saque del rival.
+STATS_RESTO = [
+    ("puntos_resto_jugados", "puntos-resto-jugados"),
+    ("puntos_resto_ganados", "puntos-resto-ganados"),
+    ("break_points_oportunidades", "break-points-oportunidades"),
+    ("break_points_convertidos", "break-points-convertidos"),
 ]
 
 SUPERFICIES_VALIDAS = ("Hard", "Clay", "Grass")
@@ -120,9 +128,45 @@ def _agregar_sets_games(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-# ---------------------------------------------------------------------------
-# Preparacion de participaciones
-# ---------------------------------------------------------------------------
+def _calcular_estadisticas_resto(df: pd.DataFrame, prefijo_rival: str) -> pd.DataFrame:
+    """Calcula puntos al resto y break points usando el bloque del rival."""
+    requeridas = [
+        f"{prefijo_rival}_svpt",
+        f"{prefijo_rival}_1stWon",
+        f"{prefijo_rival}_2ndWon",
+        f"{prefijo_rival}_bpSaved",
+        f"{prefijo_rival}_bpFaced",
+    ]
+    numericas = {}
+    for columna in requeridas:
+        if columna in df.columns:
+            numericas[columna] = pd.to_numeric(df[columna], errors="coerce")
+        else:
+            numericas[columna] = pd.Series(float("nan"), index=df.index)
+
+    svpt = numericas[f"{prefijo_rival}_svpt"]
+    first_won = numericas[f"{prefijo_rival}_1stWon"]
+    second_won = numericas[f"{prefijo_rival}_2ndWon"]
+    bp_saved = numericas[f"{prefijo_rival}_bpSaved"]
+    bp_faced = numericas[f"{prefijo_rival}_bpFaced"]
+
+    completos = pd.concat(numericas.values(), axis=1).notna().all(axis=1)
+    no_negativos = pd.concat(numericas.values(), axis=1).ge(0).all(axis=1)
+    consistentes = (
+        completos
+        & no_negativos
+        & ((first_won + second_won) <= svpt)
+        & (bp_saved <= bp_faced)
+    )
+
+    resultado = pd.DataFrame(index=df.index)
+    resultado["partidos_validos_resto"] = consistentes.astype(int)
+    resultado["puntos_resto_jugados"] = svpt.where(consistentes)
+    resultado["puntos_resto_ganados"] = (svpt - first_won - second_won).where(consistentes)
+    resultado["break_points_oportunidades"] = bp_faced.where(consistentes)
+    resultado["break_points_convertidos"] = (bp_faced - bp_saved).where(consistentes)
+    return resultado
+
 
 # ---------------------------------------------------------------------------
 # Preparacion de participaciones
@@ -175,6 +219,10 @@ def preparar_participaciones_ganador(df: pd.DataFrame) -> pd.DataFrame:
     # Excluir de las estadisticas de saque los partidos con bloque incompleto
     out.loc[~stats_completas, stats_cols] = float("nan")
 
+    resto = _calcular_estadisticas_resto(df_temp, "l")
+    for columna in resto.columns:
+        out[columna] = resto[columna].to_numpy()
+
     return out
 
 
@@ -225,6 +273,10 @@ def preparar_participaciones_perdedor(df: pd.DataFrame) -> pd.DataFrame:
     # Excluir de las estadisticas de saque los partidos con bloque incompleto
     out.loc[~stats_completas, stats_cols] = float("nan")
 
+    resto = _calcular_estadisticas_resto(df_temp, "w")
+    for columna in resto.columns:
+        out[columna] = resto[columna].to_numpy()
+
     return out
 
 
@@ -247,9 +299,11 @@ def unificar_participaciones(df: pd.DataFrame) -> pd.DataFrame:
 
 def _columnas_agregables() -> list[str]:
     """Devuelve las columnas numericas que se suman por jugador."""
-    cols = ["victoria", "partidos_validos", "sets_ganados", "sets_perdidos",
+    cols = ["victoria", "partidos_validos", "partidos_validos_resto", "sets_ganados", "sets_perdidos",
             "games_ganados", "games_perdidos", "minutos"]
     for stat_orig, _ in STATS_SAQUE:
+        cols.append(stat_orig)
+    for stat_orig, _ in STATS_RESTO:
         cols.append(stat_orig)
     return cols
 
@@ -259,6 +313,7 @@ def _renombrar_stats_espanol(df: pd.DataFrame, sufijo: str) -> pd.DataFrame:
     renombre = {
         "victoria": f"victorias-{sufijo}",
         "partidos_validos": f"partidos-validos-{sufijo}",
+        "partidos_validos_resto": f"partidos-validos-resto-{sufijo}",
         "sets_ganados": f"sets-ganados-{sufijo}",
         "sets_perdidos": f"sets-perdidos-{sufijo}",
         "games_ganados": f"games-ganados-{sufijo}",
@@ -267,20 +322,25 @@ def _renombrar_stats_espanol(df: pd.DataFrame, sufijo: str) -> pd.DataFrame:
     }
     for stat_orig, stat_es in STATS_SAQUE:
         renombre[stat_orig] = f"{stat_es}-{sufijo}"
+    for stat_orig, stat_es in STATS_RESTO:
+        renombre[stat_orig] = f"{stat_es}-{sufijo}"
     return df.rename(columns=renombre)
 
 
 def calcular_estadisticas_totales(participaciones: pd.DataFrame) -> pd.DataFrame:
     """Calcula estadisticas acumuladas sobre todos los partidos validos."""
-    cols_conteo = ["victoria", "partidos_validos", "sets_ganados", "sets_perdidos",
+    cols_conteo = ["victoria", "partidos_validos", "partidos_validos_resto", "sets_ganados", "sets_perdidos",
                    "games_ganados", "games_perdidos", "minutos"]
-    cols_saque = [stat_orig for stat_orig, _ in STATS_SAQUE]
+    cols_metricas = (
+        [stat_orig for stat_orig, _ in STATS_SAQUE]
+        + [stat_orig for stat_orig, _ in STATS_RESTO]
+    )
 
     totales_conteo = participaciones.groupby("id_jugador")[cols_conteo].sum(min_count=0)
     # min_count=1 asegura que si un jugador tiene 0 observaciones de saque, el total sea NaN (no 0.0)
-    totales_saque = participaciones.groupby("id_jugador")[cols_saque].sum(min_count=1)
+    totales_metricas = participaciones.groupby("id_jugador")[cols_metricas].sum(min_count=1)
 
-    totales = totales_conteo.join(totales_saque)
+    totales = totales_conteo.join(totales_metricas)
     totales = _renombrar_stats_espanol(totales, "totales")
 
     # Partidos totales y derrotas
@@ -293,9 +353,12 @@ def calcular_estadisticas_totales(participaciones: pd.DataFrame) -> pd.DataFrame
 
 def calcular_estadisticas_por_superficie(participaciones: pd.DataFrame) -> pd.DataFrame:
     """Calcula estadisticas acumuladas por superficie."""
-    cols_conteo = ["victoria", "partidos_validos", "sets_ganados", "sets_perdidos",
+    cols_conteo = ["victoria", "partidos_validos", "partidos_validos_resto", "sets_ganados", "sets_perdidos",
                    "games_ganados", "games_perdidos", "minutos"]
-    cols_saque = [stat_orig for stat_orig, _ in STATS_SAQUE]
+    cols_metricas = (
+        [stat_orig for stat_orig, _ in STATS_SAQUE]
+        + [stat_orig for stat_orig, _ in STATS_RESTO]
+    )
 
     superficies_presentes = sorted(
         s for s in participaciones["surface"].unique() if s in SUPERFICIES_VALIDAS
@@ -305,8 +368,8 @@ def calcular_estadisticas_por_superficie(participaciones: pd.DataFrame) -> pd.Da
     for superficie in superficies_presentes:
         sub = participaciones[participaciones["surface"] == superficie]
         stats_conteo = sub.groupby("id_jugador")[cols_conteo].sum(min_count=0)
-        stats_saque = sub.groupby("id_jugador")[cols_saque].sum(min_count=1)
-        stats = stats_conteo.join(stats_saque)
+        stats_metricas = sub.groupby("id_jugador")[cols_metricas].sum(min_count=1)
+        stats = stats_conteo.join(stats_metricas)
 
         suf = MAPEO_SUPERFICIES.get(superficie, superficie.lower())
         stats = _renombrar_stats_espanol(stats, suf)
@@ -325,6 +388,70 @@ def calcular_estadisticas_por_superficie(participaciones: pd.DataFrame) -> pd.Da
         resultado = resultado.join(parte, how="outer")
 
     return resultado
+
+
+def _proporcion_segura(numerador: pd.Series, denominador: pd.Series) -> pd.Series:
+    """Divide conteos consistentes y deja NaN cuando la tasa no esta definida."""
+    n = pd.to_numeric(numerador, errors="coerce")
+    d = pd.to_numeric(denominador, errors="coerce")
+    validos = n.notna() & d.notna() & (n >= 0) & (d > 0) & (n <= d)
+    return (n / d).where(validos)
+
+
+def agregar_tasas_y_cobertura(stats: pd.DataFrame) -> pd.DataFrame:
+    """Agrega tasas reutilizables y cobertura general y por superficie."""
+    stats = stats.copy()
+    for sufijo in ("totales", *SUFIJOS_SUPERFICIE):
+        partidos = f"partidos-{sufijo}"
+        if partidos not in stats.columns:
+            continue
+
+        formulas = {
+            f"tasa-victorias-{sufijo}": (
+                stats.get(f"victorias-{sufijo}"), stats[partidos]
+            ),
+            f"tasa-aces-{sufijo}": (
+                stats.get(f"aces-{sufijo}"), stats.get(f"puntos-saque-{sufijo}")
+            ),
+            f"tasa-dobles-faltas-{sufijo}": (
+                stats.get(f"dobles-faltas-{sufijo}"), stats.get(f"puntos-saque-{sufijo}")
+            ),
+            f"tasa-primer-saque-dentro-{sufijo}": (
+                stats.get(f"primeros-saques-dentro-{sufijo}"), stats.get(f"puntos-saque-{sufijo}")
+            ),
+            f"efectividad-primer-saque-{sufijo}": (
+                stats.get(f"primeros-saques-ganados-{sufijo}"), stats.get(f"primeros-saques-dentro-{sufijo}")
+            ),
+            f"tasa-break-points-salvados-{sufijo}": (
+                stats.get(f"break-points-salvados-{sufijo}"), stats.get(f"break-points-enfrentados-{sufijo}")
+            ),
+            f"tasa-puntos-ganados-resto-{sufijo}": (
+                stats.get(f"puntos-resto-ganados-{sufijo}"), stats.get(f"puntos-resto-jugados-{sufijo}")
+            ),
+            f"tasa-break-points-convertidos-{sufijo}": (
+                stats.get(f"break-points-convertidos-{sufijo}"), stats.get(f"break-points-oportunidades-{sufijo}")
+            ),
+            f"cobertura-saque-{sufijo}": (
+                stats.get(f"partidos-validos-{sufijo}"), stats[partidos]
+            ),
+            f"cobertura-resto-{sufijo}": (
+                stats.get(f"partidos-validos-resto-{sufijo}"), stats[partidos]
+            ),
+        }
+
+        puntos_saque = stats.get(f"puntos-saque-{sufijo}")
+        primeros_dentro = stats.get(f"primeros-saques-dentro-{sufijo}")
+        if puntos_saque is not None and primeros_dentro is not None:
+            formulas[f"efectividad-segundo-saque-{sufijo}"] = (
+                stats.get(f"segundos-saques-ganados-{sufijo}"),
+                puntos_saque - primeros_dentro,
+            )
+
+        for nombre, (numerador, denominador) in formulas.items():
+            if numerador is not None and denominador is not None:
+                stats[nombre] = _proporcion_segura(numerador, denominador)
+
+    return stats
 
 
 # ---------------------------------------------------------------------------
@@ -514,7 +641,8 @@ def validar_dataset(df: pd.DataFrame) -> None:
     if cols_carpet:
         problemas.append(f"[carpet] columnas de Carpet encontradas: {cols_carpet}")
 
-    # 5. No hay porcentajes
+    # 5. Los nombres no usan variantes ambiguas de "porcentaje"; las proporciones
+    # canonicas se identifican como tasa, efectividad o cobertura.
     cols_pct = [
         c for c in df.columns
         if any(p in c.lower() for p in ("porcentaje", "pct", "percent", "ratio"))
@@ -550,8 +678,15 @@ def validar_dataset(df: pd.DataFrame) -> None:
         if col in df.columns and (df[col] < 0).any():
             problemas.append(f"[titulos] valores negativos en {col}")
 
-    # 10. Totales consistentes con suma de superficies
-    for metrica in ("partidos", "victorias", "derrotas", "partidos-validos"):
+    # 10. Totales aditivos consistentes con suma de superficies
+    metricas_aditivas = [
+        "partidos", "victorias", "derrotas", "partidos-validos",
+        "partidos-validos-resto", "sets-ganados", "sets-perdidos",
+        "games-ganados", "games-perdidos", "minutos",
+        *[nombre for _, nombre in STATS_SAQUE],
+        *[nombre for _, nombre in STATS_RESTO],
+    ]
+    for metrica in metricas_aditivas:
         col_total = f"{metrica}-totales"
         cols_sup = [f"{metrica}-{s}" for s in SUFIJOS_SUPERFICIE]
         if col_total in df.columns and all(c in df.columns for c in cols_sup):
@@ -564,7 +699,20 @@ def validar_dataset(df: pd.DataFrame) -> None:
                     f"en {inconsistentes} jugadores"
                 )
 
-    # 11. Sin filas duplicadas
+    # 11. Tasas, efectividades y coberturas dentro de [0, 1]
+    columnas_proporcion = [
+        c for c in df.columns
+        if c.startswith(("tasa-", "efectividad-", "cobertura-"))
+    ]
+    for col in columnas_proporcion:
+        observados = pd.to_numeric(df[col], errors="coerce").dropna()
+        fuera_de_rango = int((~observados.between(0, 1, inclusive="both")).sum())
+        if fuera_de_rango:
+            problemas.append(
+                f"[tasas] {fuera_de_rango} valores fuera de [0, 1] en {col}"
+            )
+
+    # 12. Sin filas duplicadas
     duplicadas = df.duplicated().sum()
     if duplicadas:
         problemas.append(f"[duplicados] {duplicadas} filas completamente duplicadas")
@@ -664,7 +812,8 @@ def build_player_dataset(ruta_consolidado: str | Path) -> str:
     for suf in SUFIJOS_SUPERFICIE:
         cols_conteo_suf = [
             f"partidos-{suf}", f"victorias-{suf}", f"derrotas-{suf}",
-            f"partidos-validos-{suf}", f"sets-ganados-{suf}", f"sets-perdidos-{suf}",
+            f"partidos-validos-{suf}", f"partidos-validos-resto-{suf}",
+            f"sets-ganados-{suf}", f"sets-perdidos-{suf}",
             f"games-ganados-{suf}", f"games-perdidos-{suf}", f"minutos-{suf}",
         ]
         for col in cols_conteo_suf:
@@ -677,18 +826,25 @@ def build_player_dataset(ruta_consolidado: str | Path) -> str:
             col_stat = f"{stat_es}-{suf}"
             if col_stat not in stats.columns:
                 stats[col_stat] = float("nan")
+        for stat_orig, stat_es in STATS_RESTO:
+            col_stat = f"{stat_es}-{suf}"
+            if col_stat not in stats.columns:
+                stats[col_stat] = float("nan")
 
     # 9. Filtrar jugadores con menos de 3 partidos
     stats = filtrar_minimo_partidos(stats, minimo=3)
 
-    # 10. Cargar informacion personal
+    # 10. Calcular tasas y coberturas desde los totales del Silver
+    stats = agregar_tasas_y_cobertura(stats)
+
+    # 11. Cargar informacion personal
     ruta_bios = config.DIR_CRUDO / config.ARCHIVO_BIOS
     bios = cargar_informacion_jugadores(ruta_bios)
 
-    # 11. Unir con informacion personal
+    # 12. Unir con informacion personal
     dataset = unir_informacion_jugadores(stats, bios)
 
-    # 12. Ordenar columnas: info personal primero, luego totales, superficie, titulos
+    # 13. Ordenar columnas: info personal primero, luego totales, superficie, titulos
     cols_info = [
         c for c in dataset.columns
         if c in (
@@ -710,10 +866,10 @@ def build_player_dataset(ruta_consolidado: str | Path) -> str:
     ]
     dataset = dataset[cols_info + sorted(cols_totales) + cols_sup_ord + cols_tit + resto]
 
-    # 13. Validar
+    # 14. Validar
     validar_dataset(dataset)
 
-    # 14. Guardar
+    # 15. Guardar
     destino = config.DIR_PROCESADO / "atp_jugadores.csv"
     guardar_dataset(dataset, destino)
 

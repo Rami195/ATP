@@ -1,12 +1,12 @@
 """Pruebas del modulo dataset_jugadores.
 
-Usa DataFrames sinteticos para verificar las 6 reglas obligatorias:
+Usa DataFrames sinteticos para verificar las reglas del Silver de jugadores:
 1. Exclusion de Carpet
-2. Filtro de minimo 20 partidos
+2. Filtro de minimo 3 partidos
 3. Una fila por jugador
 4. Titulos correctos
 5. Totales = suma de superficies
-6. Sin porcentajes
+6. Tasas, devolucion y cobertura
 """
 
 from __future__ import annotations
@@ -383,7 +383,7 @@ class TestTotalesConsistentes:
 # ---------------------------------------------------------------------------
 
 class TestSinPorcentajes:
-    """No debe haber columnas que representen porcentajes."""
+    """Las proporciones no usan nombres ambiguos como pct o porcentaje."""
 
     def test_sin_columnas_porcentaje(self):
         partidos = _generar_partidos("P1", "P2", 25, surface="Hard")
@@ -401,6 +401,73 @@ class TestSinPorcentajes:
             if any(p in c.lower() for p in ("porcentaje", "pct", "percent", "ratio"))
         ]
         assert cols_pct == [], f"Columnas de porcentaje encontradas: {cols_pct}"
+
+
+class TestTasasDevolucionYCobertura:
+    """Verifica las features reutilizables que deben quedar en Silver."""
+
+    def _stats_tres_partidos(self) -> pd.DataFrame:
+        df = pd.DataFrame(_generar_partidos("P1", "P2", 3, surface="Hard"))
+        df = dataset_jugadores.normalizar_superficies(df)
+        df = dataset_jugadores._agregar_sets_games(df)
+        participaciones = dataset_jugadores.unificar_participaciones(df)
+        totales = dataset_jugadores.calcular_estadisticas_totales(participaciones)
+        por_superficie = dataset_jugadores.calcular_estadisticas_por_superficie(participaciones)
+        return dataset_jugadores.agregar_tasas_y_cobertura(
+            totales.join(por_superficie, how="left")
+        )
+
+    def test_tasas_generales_se_calculan_desde_totales(self):
+        stats = self._stats_tres_partidos()
+
+        assert stats.loc["P1", "tasa-victorias-totales"] == pytest.approx(1.0)
+        assert stats.loc["P1", "tasa-aces-totales"] == pytest.approx(15 / 180)
+        assert stats.loc["P1", "tasa-dobles-faltas-totales"] == pytest.approx(6 / 180)
+        assert stats.loc["P1", "tasa-primer-saque-dentro-totales"] == pytest.approx(120 / 180)
+        assert stats.loc["P1", "efectividad-primer-saque-totales"] == pytest.approx(90 / 120)
+        assert stats.loc["P1", "efectividad-segundo-saque-totales"] == pytest.approx(30 / 60)
+        assert stats.loc["P1", "tasa-break-points-salvados-totales"] == pytest.approx(9 / 15)
+
+    def test_devolucion_se_deriva_del_saque_del_rival(self):
+        stats = self._stats_tres_partidos()
+
+        assert stats.loc["P1", "puntos-resto-jugados-totales"] == 165
+        assert stats.loc["P1", "puntos-resto-ganados-totales"] == 66
+        assert stats.loc["P1", "tasa-puntos-ganados-resto-totales"] == pytest.approx(66 / 165)
+        assert stats.loc["P1", "break-points-oportunidades-totales"] == 12
+        assert stats.loc["P1", "break-points-convertidos-totales"] == 6
+        assert stats.loc["P1", "tasa-break-points-convertidos-totales"] == pytest.approx(0.5)
+
+    def test_cobertura_general_y_por_superficie(self):
+        stats = self._stats_tres_partidos()
+
+        assert stats.loc["P1", "cobertura-saque-totales"] == pytest.approx(1.0)
+        assert stats.loc["P1", "cobertura-resto-totales"] == pytest.approx(1.0)
+        assert stats.loc["P1", "tasa-aces-cemento"] == pytest.approx(15 / 180)
+        assert stats.loc["P1", "tasa-puntos-ganados-resto-cemento"] == pytest.approx(66 / 165)
+        assert stats.loc["P1", "cobertura-saque-cemento"] == pytest.approx(1.0)
+        assert stats.loc["P1", "cobertura-resto-cemento"] == pytest.approx(1.0)
+
+    def test_faltante_del_rival_no_inventa_estadisticas_de_resto(self):
+        partidos = [
+            _partido(
+                winner_id="P1", loser_id="P2", match_num=i,
+                l_svpt=float("nan"),
+            )
+            for i in range(1, 4)
+        ]
+        df = pd.DataFrame(partidos)
+        df = dataset_jugadores.normalizar_superficies(df)
+        df = dataset_jugadores._agregar_sets_games(df)
+        participaciones = dataset_jugadores.unificar_participaciones(df)
+        totales = dataset_jugadores.calcular_estadisticas_totales(participaciones)
+        stats = dataset_jugadores.agregar_tasas_y_cobertura(totales)
+
+        assert stats.loc["P1", "partidos-validos-totales"] == 3
+        assert stats.loc["P1", "partidos-validos-resto-totales"] == 0
+        assert pd.isna(stats.loc["P1", "puntos-resto-ganados-totales"])
+        assert stats.loc["P1", "cobertura-resto-totales"] == pytest.approx(0.0)
+        assert pd.isna(stats.loc["P1", "tasa-puntos-ganados-resto-totales"])
 
 
 # ---------------------------------------------------------------------------

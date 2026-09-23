@@ -190,9 +190,14 @@ def test_dataset_jugadores_con_tour_challenger_y_quali(tmp_path: Path):
     df_norm = dataset_jugadores._agregar_sets_games(df_norm)
     participaciones = dataset_jugadores.unificar_participaciones(df_norm)
     totales = dataset_jugadores.calcular_estadisticas_totales(participaciones)
+    tasas = dataset_jugadores.agregar_tasas_y_cobertura(totales)
 
     assert totales.loc["P_ALL", "partidos-totales"] == 3
     assert totales.loc["P_INSUF", "partidos-totales"] == 2
+    assert tasas.loc["P_ALL", "tasa-victorias-totales"] == pytest.approx(1.0)
+    assert tasas.loc["P_ALL", "tasa-aces-totales"] == pytest.approx(5 / 60)
+    assert tasas.loc["P_ALL", "cobertura-saque-totales"] == pytest.approx(1.0)
+    assert tasas.loc["P_ALL", "cobertura-resto-totales"] == pytest.approx(1.0)
 
     filtrado = dataset_jugadores.filtrar_minimo_partidos(totales, minimo=3)
     assert "P_ALL" in filtrado.index
