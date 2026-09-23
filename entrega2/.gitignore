@@ -1,0 +1,8 @@
+# Dependencias de Node (solo para generar documentos locales)
+node_modules/
+package-lock.json
+package.json
+
+# Salidas que regenera el notebook en cada corrida.
+# Los graficos ya quedan embebidos dentro del .ipynb.
+resultados/
