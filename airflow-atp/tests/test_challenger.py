@@ -39,9 +39,9 @@ def _partido_ejemplo(
         "winner_entry": stats.get("winner_entry", ""),
         "winner_name": winner_name,
         "winner_hand": "R",
-        "winner_ht": 185,
+        "winner_ht": stats.get("winner_ht", 185),
         "winner_ioc": "ARG",
-        "winner_age": 22.5,
+        "winner_age": stats.get("winner_age", 22.5),
         "winner_rank": 150,
         "winner_rank_points": 400,
         "loser_id": loser_id,
@@ -49,9 +49,9 @@ def _partido_ejemplo(
         "loser_entry": stats.get("loser_entry", ""),
         "loser_name": loser_name,
         "loser_hand": "R",
-        "loser_ht": 180,
+        "loser_ht": stats.get("loser_ht", 180),
         "loser_ioc": "BRA",
-        "loser_age": 24.1,
+        "loser_age": stats.get("loser_age", 24.1),
         "loser_rank": 200,
         "loser_rank_points": 280,
         "score": score,
@@ -202,4 +202,26 @@ def test_dataset_jugadores_con_tour_challenger_y_quali(tmp_path: Path):
     filtrado = dataset_jugadores.filtrar_minimo_partidos(totales, minimo=3)
     assert "P_ALL" in filtrado.index
     assert "P_INSUF" not in filtrado.index
+
+
+def test_consolidar_limpia_valores_centinela_challenger(tmp_path: Path):
+    """Verifica que consolidar limpie alturas en 0 y minutos fuera de rango a null."""
+    df_ch = pd.DataFrame([
+        _partido_ejemplo(
+            tourney_id="2024-C01",
+            winner_ht=0,
+            loser_ht=0,
+            minutes=999.0,
+            winner_age=57.3,
+        ),
+    ])
+    pch = tmp_path / "2024_challenger.csv"
+    df_ch.to_csv(pch, index=False)
+
+    consolidado = consolidar.consolidar([pch])
+    assert pd.isna(consolidado.loc[0, "winner_ht"])
+    assert pd.isna(consolidado.loc[0, "loser_ht"])
+    assert pd.isna(consolidado.loc[0, "minutes"])
+    assert consolidado.loc[0, "winner_age"] == pytest.approx(57.3)
+
 

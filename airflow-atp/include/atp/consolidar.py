@@ -44,6 +44,14 @@ def consolidar(rutas: list[Path]) -> pd.DataFrame:
     )
 
     # --- Limpieza --------------------------------------------------------
+    # Limpieza de valores centinela o corruptos en fuentes crudas (ej. Challenger)
+    for col in ("winner_ht", "loser_ht"):
+        if col in partidos.columns:
+            partidos.loc[partidos[col] <= 0, col] = pd.NA
+
+    if "minutes" in partidos.columns:
+        partidos.loc[(partidos["minutes"] <= 0) | (partidos["minutes"] > 720), "minutes"] = pd.NA
+
     # Sin id de alguno de los dos jugadores el partido no sirve para nada.
     sin_id = partidos["winner_id"].isna() | partidos["loser_id"].isna()
     sin_fecha = partidos["fecha"].isna()
