@@ -1,0 +1,9 @@
+﻿variable,columna_silver,que_mide_y_formula
+tasa_aces,tasa-aces-totales,Aces / puntos de saque: frecuencia de puntos ganados directamente con el servicio.
+tasa_dobles_faltas,tasa-dobles-faltas-totales,Dobles faltas / puntos de saque: frecuencia de errores de ambos servicios.
+primer_saque_dentro,tasa-primer-saque-dentro-totales,Primeros saques dentro / puntos de saque: regularidad del primer servicio.
+efectividad_primero,efectividad-primer-saque-totales,Puntos ganados con primer saque / primeros saques dentro: éxito cuando entra.
+efectividad_segundo,efectividad-segundo-saque-totales,Puntos ganados con segundo saque / intentos de segundo saque.
+bp_salvados,tasa-break-points-salvados-totales,Break points salvados / enfrentados: quiebres evitados al sacar.
+puntos_ganados_resto,tasa-puntos-ganados-resto-totales,Puntos que el rival no ganó al sacar / puntos de saque del rival.
+bp_convertidos,tasa-break-points-convertidos-totales,Break points no salvados por el rival / oportunidades del jugador.
