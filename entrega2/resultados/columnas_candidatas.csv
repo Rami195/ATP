@@ -1,0 +1,38 @@
+﻿etapa,columna,que_mide,zona,decision,existiria_al_predecir
+Clustering jugador–superficie,tasa_aces,Aces / puntos de saque: frecuencia de puntos ganados directamente con el servicio.,verde,Entra al clustering. Usar la versión de la superficie y estandarizar dentro de superficie.,"Sí, si el perfil usa solamente partidos anteriores."
+Clustering jugador–superficie,tasa_dobles_faltas,Dobles faltas / puntos de saque: frecuencia de errores de ambos servicios.,verde,Entra al clustering. Usar la versión de la superficie y estandarizar dentro de superficie.,"Sí, si el perfil usa solamente partidos anteriores."
+Clustering jugador–superficie,primer_saque_dentro,Primeros saques dentro / puntos de saque: regularidad del primer servicio.,verde,Entra al clustering. Usar la versión de la superficie y estandarizar dentro de superficie.,"Sí, si el perfil usa solamente partidos anteriores."
+Clustering jugador–superficie,efectividad_primero,Puntos ganados con primer saque / primeros saques dentro: éxito cuando entra.,verde,Sale del clustering por redundancia confirmada en H2; se conserva tasa_aces.,"Sí, si el perfil usa solamente partidos anteriores."
+Clustering jugador–superficie,efectividad_segundo,Puntos ganados con segundo saque / intentos de segundo saque.,verde,Entra al clustering. Usar la versión de la superficie y estandarizar dentro de superficie.,"Sí, si el perfil usa solamente partidos anteriores."
+Clustering jugador–superficie,bp_salvados,Break points salvados / enfrentados: quiebres evitados al sacar.,verde,Entra al clustering. Usar la versión de la superficie y estandarizar dentro de superficie.,"Sí, si el perfil usa solamente partidos anteriores."
+Clustering jugador–superficie,puntos_ganados_resto,Puntos que el rival no ganó al sacar / puntos de saque del rival.,verde,Entra al clustering. Usar la versión de la superficie y estandarizar dentro de superficie.,"Sí, si el perfil usa solamente partidos anteriores."
+Clustering jugador–superficie,bp_convertidos,Break points no salvados por el rival / oportunidades del jugador.,verde,Entra al clustering. Usar la versión de la superficie y estandarizar dentro de superficie.,"Sí, si el perfil usa solamente partidos anteriores."
+Clustering jugador–superficie,partidos,Exposición en la superficie,verde,Filtro definitivo: >=20 partidos; no entra en X.,Sí sólo en versión histórica cuando corresponda.
+Clustering jugador–superficie,cobertura_saque,Calidad de estadísticas de saque,verde,Filtro definitivo: >=80%; no entra en X.,Sí sólo en versión histórica cuando corresponda.
+Clustering jugador–superficie,cobertura_resto,Calidad de estadísticas de devolución,verde,Filtro definitivo: >=80%; no entra en X.,Sí sólo en versión histórica cuando corresponda.
+Clustering jugador–superficie,superficie,Identifica el perfil jugador–superficie,verde,No entra en la distancia; define la fila y la estandarización.,Sí sólo en versión histórica cuando corresponda.
+Clustering jugador–superficie,winrate,Rendimiento en la superficie,rojo,Sale del clustering para evitar circularidad; mide superioridad después.,Sí sólo en versión histórica cuando corresponda.
+Clustering jugador–superficie,ranking,Fuerza competitiva,rojo,Sale del clustering; se usa en el modelo base.,Sí sólo en versión histórica cuando corresponda.
+Clustering jugador–superficie,titulos,Éxito acumulado,rojo,Sale del clustering; se reserva para evaluación externa.,Sí sólo en versión histórica cuando corresponda.
+Clustering jugador–superficie,titulos-1000-grass,Columna constante en este snapshot,rojo,Sale porque no aporta variación.,Sí sólo en versión histórica cuando corresponda.
+Modelo base,dif_log_ranking,Diferencia logarítmica de ranking A−B,amarillo,Entra transformada; referencia principal que el modelo ampliado debe superar.,"Sí, antes del partido."
+Modelo base,dif_partidos_log,Diferencia A−B de experiencia histórica en escala log1p,rojo,Entra transformada como control de experiencia y confiabilidad del estilo.,"Sí, usando historial anterior."
+Modelo base,dif_winrate,Diferencia A−B de tasa histórica de victorias,amarillo,Entra como control histórico de fuerza.,"Sí, usando únicamente partidos anteriores."
+Modelo base,surface,Contexto conocido del encuentro,verde,Entra al modelo base y al ampliado.,"Sí, antes del partido."
+Modelo base,tourney_level,Contexto conocido del encuentro,verde,Entra al modelo base y al ampliado.,"Sí, antes del partido."
+Modelo base,best_of,Contexto conocido del encuentro,verde,Entra al modelo base y al ampliado.,"Sí, antes del partido."
+Modelo ampliado,estilo_a,Estilo de A en la superficie del partido,amarillo,Entra obligatoriamente al modelo ampliado; se deriva del clustering jugador–superficie.,"Sí, si el cluster se ajusta únicamente con historial anterior."
+Modelo ampliado,estilo_b,Estilo de B en la superficie del partido,amarillo,Entra obligatoriamente al modelo ampliado; se deriva del clustering jugador–superficie.,"Sí, si el cluster se ajusta únicamente con historial anterior."
+Modelo ampliado,interaccion_estilos,Combinación estilo A × estilo B,amarillo,Entra obligatoriamente al modelo ampliado; se deriva del clustering jugador–superficie.,"Sí, si el cluster se ajusta únicamente con historial anterior."
+Modelo ampliado,dif_puntos_ganados_resto,Diferencia histórica de puntos ganados al resto,rojo,Sale como predictor aislado por H4; permanece dentro del clustering técnico.,"Sí en versión histórica, pero H4 decide su papel como predictor aislado."
+Control de fuga,winner_id,Resultado o estadística del partido actual,rojo,Sale definitivamente por fuga.,No: se conoce durante o después del partido.
+Control de fuga,loser_id,Resultado o estadística del partido actual,rojo,Sale definitivamente por fuga.,No: se conoce durante o después del partido.
+Control de fuga,score,Resultado o estadística del partido actual,rojo,Sale definitivamente por fuga.,No: se conoce durante o después del partido.
+Control de fuga,minutes,Resultado o estadística del partido actual,rojo,Sale definitivamente por fuga.,No: se conoce durante o después del partido.
+Control de fuga,w_ace,Resultado o estadística del partido actual,rojo,Sale definitivamente por fuga.,No: se conoce durante o después del partido.
+Control de fuga,l_ace,Resultado o estadística del partido actual,rojo,Sale definitivamente por fuga.,No: se conoce durante o después del partido.
+Trazabilidad,id_partido,"Clave, identificación o corte temporal",verde,Metadato; no entra como feature.,"Sí, pero no mide habilidad."
+Trazabilidad,id_a,"Clave, identificación o corte temporal",verde,Metadato; no entra como feature.,"Sí, pero no mide habilidad."
+Trazabilidad,id_b,"Clave, identificación o corte temporal",verde,Metadato; no entra como feature.,"Sí, pero no mide habilidad."
+Trazabilidad,fecha,"Clave, identificación o corte temporal",verde,Metadato; no entra como feature.,"Sí, pero no mide habilidad."
+Objetivo,gana_a,1 si gana A; 0 si gana B,verde,Objetivo y; nunca entra en X.,No: se observa al terminar.

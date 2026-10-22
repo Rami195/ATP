@@ -1,0 +1,158 @@
+﻿columna,decision,motivo
+id-jugador,Metadato o contexto,No entra al núcleo técnico
+nombre-jugador,Metadato o contexto,No entra al núcleo técnico
+fecha-nacimiento,Metadato o contexto,No entra al núcleo técnico
+altura-cm,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+peso-kg,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+mano-dominante,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+tipo-reves,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+año-profesional,Metadato o contexto,No entra al núcleo técnico
+pais,Metadato o contexto,No entra al núcleo técnico
+aces-totales,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+break-points-convertidos-totales,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+break-points-enfrentados-totales,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+break-points-oportunidades-totales,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+break-points-salvados-totales,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+cobertura-resto-totales,Filtro de calidad/exposición,No entra a la distancia
+cobertura-saque-totales,Filtro de calidad/exposición,No entra a la distancia
+derrotas-totales,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+dobles-faltas-totales,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+efectividad-primer-saque-totales,Diagnóstico global; sale del clustering por superficie,Se usa la variante de cada superficie
+efectividad-segundo-saque-totales,Diagnóstico global; sale del clustering por superficie,Se usa la variante de cada superficie
+games-ganados-totales,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+games-perdidos-totales,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+games-saque-totales,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+minutos-totales,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+partidos-totales,Filtro de calidad/exposición,No entra a la distancia
+partidos-validos-resto-totales,Filtro de calidad/exposición,No entra a la distancia
+partidos-validos-totales,Filtro de calidad/exposición,No entra a la distancia
+primeros-saques-dentro-totales,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+primeros-saques-ganados-totales,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+puntos-resto-ganados-totales,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+puntos-resto-jugados-totales,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+puntos-saque-totales,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+segundos-saques-ganados-totales,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+sets-ganados-totales,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+sets-perdidos-totales,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+tasa-aces-totales,Diagnóstico global; sale del clustering por superficie,Se usa la variante de cada superficie
+tasa-break-points-convertidos-totales,Diagnóstico global; sale del clustering por superficie,Se usa la variante de cada superficie
+tasa-break-points-salvados-totales,Diagnóstico global; sale del clustering por superficie,Se usa la variante de cada superficie
+tasa-dobles-faltas-totales,Diagnóstico global; sale del clustering por superficie,Se usa la variante de cada superficie
+tasa-primer-saque-dentro-totales,Diagnóstico global; sale del clustering por superficie,Se usa la variante de cada superficie
+tasa-puntos-ganados-resto-totales,Diagnóstico global; sale del clustering por superficie,Se usa la variante de cada superficie
+tasa-victorias-totales,Sale del clustering; mide superioridad,"Resultado, no definición de estilo"
+victorias-totales,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+aces-cemento,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+break-points-convertidos-cemento,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+break-points-enfrentados-cemento,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+break-points-oportunidades-cemento,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+break-points-salvados-cemento,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+cobertura-resto-cemento,Filtro de calidad/exposición,No entra a la distancia
+cobertura-saque-cemento,Filtro de calidad/exposición,No entra a la distancia
+derrotas-cemento,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+dobles-faltas-cemento,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+efectividad-primer-saque-cemento,Entra al perfil largo de su superficie,Feature técnica del clustering
+efectividad-segundo-saque-cemento,Entra al perfil largo de su superficie,Feature técnica del clustering
+games-ganados-cemento,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+games-perdidos-cemento,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+games-saque-cemento,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+minutos-cemento,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+partidos-cemento,Filtro de calidad/exposición,No entra a la distancia
+partidos-validos-cemento,Filtro de calidad/exposición,No entra a la distancia
+partidos-validos-resto-cemento,Filtro de calidad/exposición,No entra a la distancia
+primeros-saques-dentro-cemento,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+primeros-saques-ganados-cemento,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+puntos-resto-ganados-cemento,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+puntos-resto-jugados-cemento,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+puntos-saque-cemento,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+segundos-saques-ganados-cemento,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+sets-ganados-cemento,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+sets-perdidos-cemento,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+tasa-aces-cemento,Entra al perfil largo de su superficie,Feature técnica del clustering
+tasa-break-points-convertidos-cemento,Entra al perfil largo de su superficie,Feature técnica del clustering
+tasa-break-points-salvados-cemento,Entra al perfil largo de su superficie,Feature técnica del clustering
+tasa-dobles-faltas-cemento,Entra al perfil largo de su superficie,Feature técnica del clustering
+tasa-primer-saque-dentro-cemento,Entra al perfil largo de su superficie,Feature técnica del clustering
+tasa-puntos-ganados-resto-cemento,Entra al perfil largo de su superficie,Feature técnica del clustering
+tasa-victorias-cemento,Sale del clustering; mide superioridad,"Resultado, no definición de estilo"
+victorias-cemento,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+aces-clay,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+break-points-convertidos-clay,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+break-points-enfrentados-clay,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+break-points-oportunidades-clay,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+break-points-salvados-clay,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+cobertura-resto-clay,Filtro de calidad/exposición,No entra a la distancia
+cobertura-saque-clay,Filtro de calidad/exposición,No entra a la distancia
+derrotas-clay,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+dobles-faltas-clay,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+efectividad-primer-saque-clay,Entra al perfil largo de su superficie,Feature técnica del clustering
+efectividad-segundo-saque-clay,Entra al perfil largo de su superficie,Feature técnica del clustering
+games-ganados-clay,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+games-perdidos-clay,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+games-saque-clay,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+minutos-clay,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+partidos-clay,Filtro de calidad/exposición,No entra a la distancia
+partidos-validos-clay,Filtro de calidad/exposición,No entra a la distancia
+partidos-validos-resto-clay,Filtro de calidad/exposición,No entra a la distancia
+primeros-saques-dentro-clay,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+primeros-saques-ganados-clay,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+puntos-resto-ganados-clay,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+puntos-resto-jugados-clay,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+puntos-saque-clay,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+segundos-saques-ganados-clay,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+sets-ganados-clay,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+sets-perdidos-clay,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+tasa-aces-clay,Entra al perfil largo de su superficie,Feature técnica del clustering
+tasa-break-points-convertidos-clay,Entra al perfil largo de su superficie,Feature técnica del clustering
+tasa-break-points-salvados-clay,Entra al perfil largo de su superficie,Feature técnica del clustering
+tasa-dobles-faltas-clay,Entra al perfil largo de su superficie,Feature técnica del clustering
+tasa-primer-saque-dentro-clay,Entra al perfil largo de su superficie,Feature técnica del clustering
+tasa-puntos-ganados-resto-clay,Entra al perfil largo de su superficie,Feature técnica del clustering
+tasa-victorias-clay,Sale del clustering; mide superioridad,"Resultado, no definición de estilo"
+victorias-clay,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+aces-grass,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+break-points-convertidos-grass,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+break-points-enfrentados-grass,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+break-points-oportunidades-grass,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+break-points-salvados-grass,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+cobertura-resto-grass,Filtro de calidad/exposición,No entra a la distancia
+cobertura-saque-grass,Filtro de calidad/exposición,No entra a la distancia
+derrotas-grass,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+dobles-faltas-grass,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+efectividad-primer-saque-grass,Entra al perfil largo de su superficie,Feature técnica del clustering
+efectividad-segundo-saque-grass,Entra al perfil largo de su superficie,Feature técnica del clustering
+games-ganados-grass,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+games-perdidos-grass,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+games-saque-grass,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+minutos-grass,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+partidos-grass,Filtro de calidad/exposición,No entra a la distancia
+partidos-validos-grass,Filtro de calidad/exposición,No entra a la distancia
+partidos-validos-resto-grass,Filtro de calidad/exposición,No entra a la distancia
+primeros-saques-dentro-grass,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+primeros-saques-ganados-grass,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+puntos-resto-ganados-grass,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+puntos-resto-jugados-grass,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+puntos-saque-grass,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+segundos-saques-ganados-grass,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+sets-ganados-grass,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+sets-perdidos-grass,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+tasa-aces-grass,Entra al perfil largo de su superficie,Feature técnica del clustering
+tasa-break-points-convertidos-grass,Entra al perfil largo de su superficie,Feature técnica del clustering
+tasa-break-points-salvados-grass,Entra al perfil largo de su superficie,Feature técnica del clustering
+tasa-dobles-faltas-grass,Entra al perfil largo de su superficie,Feature técnica del clustering
+tasa-primer-saque-dentro-grass,Entra al perfil largo de su superficie,Feature técnica del clustering
+tasa-puntos-ganados-resto-grass,Entra al perfil largo de su superficie,Feature técnica del clustering
+tasa-victorias-grass,Sale del clustering; mide superioridad,"Resultado, no definición de estilo"
+victorias-grass,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+titulos-1000-cemento,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+titulos-1000-clay,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+titulos-1000-grass,Sale: constante,No aporta variación
+titulos-250-cemento,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+titulos-250-clay,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+titulos-250-grass,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+titulos-500-cemento,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+titulos-500-clay,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+titulos-500-grass,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+titulos-grand-slam-cemento,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+titulos-grand-slam-clay,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico
+titulos-grand-slam-grass,"Sale del núcleo; insumo, conteo o evaluación",No define directamente el estilo técnico

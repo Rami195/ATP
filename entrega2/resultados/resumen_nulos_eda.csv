@@ -1,0 +1,10 @@
+﻿columna,nulos,pct_nulos,datos_disponibles,detalle
+nombre-jugador,0,0.0,1450,Variable personal
+fecha-nacimiento,2,0.14,1448,Variable personal
+altura-cm,161,11.1,1289,Variable personal
+peso-kg,149,10.28,1301,Variable personal
+mano-dominante,71,4.9,1379,Variable personal
+tipo-reves,452,31.17,998,Variable personal
+año-profesional,444,30.62,1006,Variable personal
+pais,1,0.07,1449,Variable personal
+grass (38 columnas agrupadas),609,42.0,841,24 columnas con nulos; rango 586-622

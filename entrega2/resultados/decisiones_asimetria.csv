@@ -1,0 +1,17 @@
+﻿columna,asimetria,asimetria_absoluta,cola_larga,asimetria_log1p,decision
+partidos-totales,2.9741,2.9741,Sí,0.4725,log1p sólo si entra como control; no define el estilo
+victorias-totales,4.3092,4.3092,Sí,0.4968,excluir del clustering; resultado acumulado
+aces-totales,4.5969,4.5969,Sí,0.0974,preferir tasa-aces; log1p sólo si se usa el conteo
+puntos-saque-totales,2.912,2.912,Sí,0.2068,usar para cobertura; log1p sólo como control
+break-points-oportunidades-totales,3.5237,3.5237,Sí,0.1243,preferir la tasa; log1p sólo como control
+altura-cm,0.1483,0.1483,No,,mantener sin transformación y escalar
+peso-kg,1.044,1.044,Sí,,revisar el extremo de 151 kg; no transformar automáticamente
+tasa-aces-totales,1.073,1.073,Sí,,mantener; filtrar cobertura y escalar antes del clustering
+tasa-dobles-faltas-totales,1.8188,1.8188,Sí,,mantener; filtrar cobertura y escalar antes del clustering
+tasa-primer-saque-dentro-totales,-0.1204,0.1204,No,,mantener; filtrar cobertura y escalar antes del clustering
+efectividad-primer-saque-totales,-1.0744,1.0744,Sí,,mantener; filtrar cobertura y escalar antes del clustering
+efectividad-segundo-saque-totales,-1.4672,1.4672,Sí,,mantener; filtrar cobertura y escalar antes del clustering
+tasa-break-points-salvados-totales,-1.4817,1.4817,Sí,,mantener; filtrar cobertura y escalar antes del clustering
+tasa-puntos-ganados-resto-totales,-0.4894,0.4894,No,,mantener; filtrar cobertura y escalar antes del clustering
+tasa-break-points-convertidos-totales,0.7054,0.7054,No,,mantener; filtrar cobertura y escalar antes del clustering
+titulos-* (12 columnas agrupadas),33.0319,33.0319,Sí,,excluir del clustering; máximo en titulos-grand-slam-clay
