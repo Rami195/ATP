@@ -6,7 +6,7 @@ puntos-saque-totales,2.912,2.912,Sí,0.2068,usar para cobertura; log1p sólo com
 break-points-oportunidades-totales,3.5237,3.5237,Sí,0.1243,preferir la tasa; log1p sólo como control
 altura-cm,0.1483,0.1483,No,,mantener sin transformación y escalar
 peso-kg,1.044,1.044,Sí,,revisar el extremo de 151 kg; no transformar automáticamente
-tasa-aces-totales,1.073,1.073,Sí,,mantener; filtrar cobertura y escalar antes del clustering
+tasa-aces-totales,1.0729,1.0729,Sí,,mantener; filtrar cobertura y escalar antes del clustering
 tasa-dobles-faltas-totales,1.8188,1.8188,Sí,,mantener; filtrar cobertura y escalar antes del clustering
 tasa-primer-saque-dentro-totales,-0.1204,0.1204,No,,mantener; filtrar cobertura y escalar antes del clustering
 efectividad-primer-saque-totales,-1.0744,1.0744,Sí,,mantener; filtrar cobertura y escalar antes del clustering

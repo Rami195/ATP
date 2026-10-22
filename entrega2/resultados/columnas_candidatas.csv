@@ -15,8 +15,8 @@ Clustering jugador–superficie,winrate,Rendimiento en la superficie,rojo,Sale d
 Clustering jugador–superficie,ranking,Fuerza competitiva,rojo,Sale del clustering; se usa en el modelo base.,Sí sólo en versión histórica cuando corresponda.
 Clustering jugador–superficie,titulos,Éxito acumulado,rojo,Sale del clustering; se reserva para evaluación externa.,Sí sólo en versión histórica cuando corresponda.
 Clustering jugador–superficie,titulos-1000-grass,Columna constante en este snapshot,rojo,Sale porque no aporta variación.,Sí sólo en versión histórica cuando corresponda.
-Modelo base,dif_log_ranking,Diferencia logarítmica de ranking A−B,amarillo,Entra transformada; referencia principal que el modelo ampliado debe superar.,"Sí, antes del partido."
-Modelo base,dif_partidos_log,Diferencia A−B de experiencia histórica en escala log1p,rojo,Entra transformada como control de experiencia y confiabilidad del estilo.,"Sí, usando historial anterior."
+Modelo base,dif_log_ranking,Diferencia logarítmica de ranking A−B,amarillo,Entra transformada; es la referencia que el modelo con estilos deberá superar.,"Sí, antes del partido."
+Modelo base,dif_partidos_log,Diferencia A−B de experiencia histórica en escala log1p,amarillo,Entra transformada como control de experiencia y confiabilidad del estilo.,"Sí, usando historial anterior."
 Modelo base,dif_winrate,Diferencia A−B de tasa histórica de victorias,amarillo,Entra como control histórico de fuerza.,"Sí, usando únicamente partidos anteriores."
 Modelo base,surface,Contexto conocido del encuentro,verde,Entra al modelo base y al ampliado.,"Sí, antes del partido."
 Modelo base,tourney_level,Contexto conocido del encuentro,verde,Entra al modelo base y al ampliado.,"Sí, antes del partido."
@@ -24,7 +24,6 @@ Modelo base,best_of,Contexto conocido del encuentro,verde,Entra al modelo base y
 Modelo ampliado,estilo_a,Estilo de A en la superficie del partido,amarillo,Entra obligatoriamente al modelo ampliado; se deriva del clustering jugador–superficie.,"Sí, si el cluster se ajusta únicamente con historial anterior."
 Modelo ampliado,estilo_b,Estilo de B en la superficie del partido,amarillo,Entra obligatoriamente al modelo ampliado; se deriva del clustering jugador–superficie.,"Sí, si el cluster se ajusta únicamente con historial anterior."
 Modelo ampliado,interaccion_estilos,Combinación estilo A × estilo B,amarillo,Entra obligatoriamente al modelo ampliado; se deriva del clustering jugador–superficie.,"Sí, si el cluster se ajusta únicamente con historial anterior."
-Modelo ampliado,dif_puntos_ganados_resto,Diferencia histórica de puntos ganados al resto,rojo,Sale como predictor aislado por H4; permanece dentro del clustering técnico.,"Sí en versión histórica, pero H4 decide su papel como predictor aislado."
 Control de fuga,winner_id,Resultado o estadística del partido actual,rojo,Sale definitivamente por fuga.,No: se conoce durante o después del partido.
 Control de fuga,loser_id,Resultado o estadística del partido actual,rojo,Sale definitivamente por fuga.,No: se conoce durante o después del partido.
 Control de fuga,score,Resultado o estadística del partido actual,rojo,Sale definitivamente por fuga.,No: se conoce durante o después del partido.
