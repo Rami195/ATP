@@ -78,9 +78,9 @@
    "tasa_aces": 1.0669225957698385,
    "tasa_dobles_faltas": 0.2643596103979128,
    "primer_saque_dentro": -0.0050572089265291924,
-   "efectividad_segundo": 0.2523369810224377,
+   "efectividad_segundo": 0.2523369810224376,
    "bp_salvados": 0.763429156498195,
-   "puntos_ganados_resto": -0.9753369663454082,
+   "puntos_ganados_resto": -0.9753369663454081,
    "bp_convertidos": -0.8652529516349423
   },
   "1": {
@@ -90,7 +90,7 @@
    "efectividad_segundo": -0.856705537162547,
    "bp_salvados": -0.760889667899861,
    "puntos_ganados_resto": 0.1123555372218476,
-   "bp_convertidos": 0.15752593558860595
+   "bp_convertidos": 0.15752593558860592
   },
   "2": {
    "tasa_aces": -0.40471866508552745,
@@ -99,7 +99,7 @@
    "efectividad_segundo": 0.5284955042863491,
    "bp_salvados": 0.11491883362365546,
    "puntos_ganados_resto": 0.5499857360189924,
-   "bp_convertidos": 0.4410222502547813
+   "bp_convertidos": 0.44102225025478137
   }
  },
  "filtro_perfil": {
