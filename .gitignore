@@ -29,6 +29,14 @@ airflow.cfg
 *.pptx
 *.html
 *_files/
+# La app de la Entrega 4 sí se versiona.
+!entrega4/web/index.html
+!entrega4/dist/index.html
+
+# Regenerable con completar_prediccion.py (15 MB) y paquetes de entrega.
+entrega3/resultados/prediccion/dataset_temporal.csv
+Entrega4_ATP_5K10_05.zip
+entrega4-publicacion.tar.gz
 
 # ---------------------------------------------------------------------------
 # Sistema operativo / editor

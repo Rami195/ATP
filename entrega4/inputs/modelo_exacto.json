@@ -1,0 +1,111 @@
+{
+  "semilla": 42,
+  "k": 3,
+  "columnas": [
+    "tasa_aces",
+    "tasa_dobles_faltas",
+    "primer_saque_dentro",
+    "efectividad_segundo",
+    "bp_salvados",
+    "puntos_ganados_resto",
+    "bp_convertidos"
+  ],
+  "nombres_por_grupo": {
+    "0": "Sacadores de potencia",
+    "1": "Saque frágil",
+    "2": "Restadores sólidos"
+  },
+  "media_por_superficie": {
+    "cemento": {
+      "tasa_aces": 0.08000046381782015,
+      "tasa_dobles_faltas": 0.040108137560275516,
+      "primer_saque_dentro": 0.6011799525334188,
+      "efectividad_segundo": 0.49997545136218324,
+      "bp_salvados": 0.6034125519182049,
+      "puntos_ganados_resto": 0.35582017464290433,
+      "bp_convertidos": 0.3806532946358218
+    },
+    "clay": {
+      "tasa_aces": 0.05298597163310592,
+      "tasa_dobles_faltas": 0.03561742798684808,
+      "primer_saque_dentro": 0.6099489369566923,
+      "efectividad_segundo": 0.49414629073872124,
+      "bp_salvados": 0.5889815280789219,
+      "puntos_ganados_resto": 0.38144449392832647,
+      "bp_convertidos": 0.4001839719174684
+    },
+    "grass": {
+      "tasa_aces": 0.09366772890261921,
+      "tasa_dobles_faltas": 0.03904459356073686,
+      "primer_saque_dentro": 0.6237733821149682,
+      "efectividad_segundo": 0.5195564918525021,
+      "bp_salvados": 0.6359565592906754,
+      "puntos_ganados_resto": 0.3457996091938656,
+      "bp_convertidos": 0.3675752520386566
+    }
+  },
+  "desvio_por_superficie": {
+    "cemento": {
+      "tasa_aces": 0.03530996256669269,
+      "tasa_dobles_faltas": 0.012122139290697687,
+      "primer_saque_dentro": 0.039685241580927434,
+      "efectividad_segundo": 0.023695840851354795,
+      "bp_salvados": 0.037093363251175765,
+      "puntos_ganados_resto": 0.024287300771457843,
+      "bp_convertidos": 0.03474345971180924
+    },
+    "clay": {
+      "tasa_aces": 0.02439185914587023,
+      "tasa_dobles_faltas": 0.010726748622037275,
+      "primer_saque_dentro": 0.04242507563932492,
+      "efectividad_segundo": 0.024006987989057395,
+      "bp_salvados": 0.03360158208723634,
+      "puntos_ganados_resto": 0.024717668943444935,
+      "bp_convertidos": 0.036579088375374415
+    },
+    "grass": {
+      "tasa_aces": 0.042033161110770476,
+      "tasa_dobles_faltas": 0.014143034232129127,
+      "primer_saque_dentro": 0.03486463863766981,
+      "efectividad_segundo": 0.025899181497128637,
+      "bp_salvados": 0.04266554237655949,
+      "puntos_ganados_resto": 0.023855775287263833,
+      "bp_convertidos": 0.037632120303011274
+    }
+  },
+  "centros_z": {
+    "0": {
+      "tasa_aces": 1.0669225957698385,
+      "tasa_dobles_faltas": 0.2643596103979128,
+      "primer_saque_dentro": -0.0050572089265291924,
+      "efectividad_segundo": 0.2523369810224376,
+      "bp_salvados": 0.763429156498195,
+      "puntos_ganados_resto": -0.9753369663454081,
+      "bp_convertidos": -0.8652529516349423
+    },
+    "1": {
+      "tasa_aces": -0.36586146352872034,
+      "tasa_dobles_faltas": 0.5341880892368471,
+      "primer_saque_dentro": -0.5331235866028478,
+      "efectividad_segundo": -0.856705537162547,
+      "bp_salvados": -0.760889667899861,
+      "puntos_ganados_resto": 0.1123555372218476,
+      "bp_convertidos": 0.15752593558860592
+    },
+    "2": {
+      "tasa_aces": -0.40471866508552745,
+      "tasa_dobles_faltas": -0.6067033162559109,
+      "primer_saque_dentro": 0.43541195952498635,
+      "efectividad_segundo": 0.5284955042863491,
+      "bp_salvados": 0.11491883362365546,
+      "puntos_ganados_resto": 0.5499857360189924,
+      "bp_convertidos": 0.44102225025478137
+    }
+  },
+  "filtro_perfil": {
+    "partidos_min": 20,
+    "cobertura_min": 0.8
+  },
+  "version_sklearn": "1.9.1",
+  "precision": "Parámetros completos del pipeline_estilos.joblib de E3"
+}

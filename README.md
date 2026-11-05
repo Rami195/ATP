@@ -1,5 +1,20 @@
 # ATP — Proyecto Integrador, Ciencia de Datos UTN FRM 2026
 
+## Versión final · Entrega 4
+
+La aplicación, los gráficos Altair y las instrucciones de reproducción están en
+[`entrega4/README.md`](entrega4/README.md). Incluye exploración de estilos y un
+simulador de enfrentamientos: elegís superficie y dos jugadores, y compara el estilo
+de cada uno con lo que dice el ranking.
+
+La pregunta predictiva se completa en
+[`Entrega3_ATP_Ampliacion_Ganadores.ipynb`](entrega3/Entrega3_ATP_Ampliacion_Ganadores.ipynb):
+agregar estilos al ranking no muestra una mejora clara en los 4.773 partidos de
+test de 2023–2025. La diferencia de accuracy es−0,29 puntos porcentuales y su
+intervalo incluye cero. Se conserva el notebook de clustering original.
+
+La guía de defensa está en [`entrega4/GUIA_DEFENSA.md`](entrega4/GUIA_DEFENSA.md).
+
 Pipeline de datos del circuito ATP: descarga automatizada, consolidación y
 dataset a nivel partido para estudiar qué predice el ganador de un partido.
 
