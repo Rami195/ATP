@@ -9,18 +9,36 @@ no asigna preguntas exclusivas a integrantes.
 perfiles, pero agregar esos estilos al ranking no mejora claramente la predicción
 en los 4.773 partidos posteriores que pudimos evaluar».
 
-## Recorrido sugerido
+## Los 25 minutos
 
-| Minutos | Mostrar | Qué explicar |
+| Min. | Momento | Qué hacer |
 |---|---|---|
-| 0–2 | Portada | Pregunta completa y diferencia entre describir, asociar y predecir |
-| 2–5 | Universo | DAG, unidad jugador–superficie, filtros, 514/451/259 perfiles |
-| 5–8 | Victorias por estilo | Unidad participación; intervalos; asociación no causal |
-| 8–13 | Modelos y evidencia | Cortes temporales, clustering sin futuro, comparación justa |
-| 13–16 | Simulador | Los tres ejemplos: mismo estilo, cambio de favorito, mismo favorito |
-| 16–19 | Exploración | Panorama, dos filtros, búsqueda, detalle y resultado del modelo |
-| 19–20 | Formularios | Un perfil típico y uno raro |
-| 20–25 | Preguntas | Gramática, limitaciones, reproducción y decisión de diseño |
+| 0–2 | Qué cambió | Dos oraciones, ver abajo |
+| 2–10 | El tallo | Portada, datos, hallazgo y modelo, en orden. Como si el docente no conociera el proyecto |
+| 10–15 | La copa | **El docente toma el mouse.** Explora los datos y prueba el modelo con un caso propio |
+| 15–22 | Preguntas | Dirigidas a integrantes puntuales, sobre cualquier parte de la app o del repositorio |
+| 22–25 | Devolución | Anotar qué hay que corregir antes del 25/11 |
+
+Llegar con la URL pública y el repositorio con el README ya abiertos.
+
+**Completar antes de entrar:** «Qué cambió» y «Lo que te marcamos en la Entrega 3» dependen
+de la devolución del docente, que no está en el repositorio. Sumarla acá, con lo resuelto
+o la explicación de por qué no se pudo. Lo que sí cambió desde E3: se agregó la pregunta
+de ganadores, con validación temporal y clustering congelado hasta 2018.
+
+## Por qué cada título afirma lo que afirma
+
+| Sección | Título | Número que lo sostiene |
+|---|---|---|
+| Portada | Tres estilos describen 1.224 perfiles; sumarlos al ranking no muestra una mejora clara | 1.224; 64,47 %; 64,17 % |
+| Los datos | Sólo 1.224 de 3.470 perfiles tienen evidencia suficiente | 3.470 con partidos, 1.304 con ≥20, 1.224 con cobertura ≥80 % |
+| Lo que encontramos | Sacar fuerte y devolver bien tiran en sentidos opuestos | r = −0,50 en 1.224 perfiles; −0,58 con ≥50 partidos |
+| El modelo | Acierta el 64 % de los partidos, y los estilos no lo mejoran | 64,47 % contra 64,17 %, 14 partidos de diferencia, piso 64,47 % |
+
+El título de «Lo que encontramos» es H5, que quedó **inconclusa**: el signo se cumple, pero
+−0,58 no llega al umbral de −0,6 que fijamos antes. La palabra «opuestos» describe el signo,
+no un compromiso fuerte, y por eso el texto dice «tendencia, no regla». Decirlo antes de
+que lo pregunten. Las hipótesis para citar: H2 se sostuvo (r = 0,86) y H6 no (r = −0,05).
 
 ## Los números que hay que saber ubicar
 
@@ -35,6 +53,12 @@ en los 4.773 partidos posteriores que pudimos evaluar».
   Son participaciones, no porcentajes de jugadores únicos.
 - Llegan como mejor rankeado: restadores 53,8 %, sacadores 45,1 %, saque frágil 33,4 %.
 - Victorias como mejor rankeado: 66,0 / 61,6 / 56,4 %. Como peor rankeado: 34,4 / 37,9 / 35,3 %.
+- Validación, media ± desvío entre cuatro años: log-loss 0,6316 ± 0,0114 base y
+  0,6289 ± 0,0126 ampliado. La diferencia es mucho menor que el desvío.
+- Sin ranking, log-loss 0,692, casi como el azar (0,693). Sin estilos, 0,6295: mejor
+  que el modelo completo (0,6306). El modelo se apoya en el ranking.
+- Acierta 54,5 % con rankings parecidos y 76,3 % con rankings lejanos. Cuando gana el
+  peor rankeado acierta 2,9 %: sigue al ranking, así que no ve las sorpresas.
 - Accuracy: ranking 64,47 %; + estilos 64,17 %. Diferencia −0,293pp.
   IC95 [−0,730; +0,114]pp: incluye cero.
 - Sumar estilos cambia al favorito en 112 de 4.773 partidos (2,35 %). Ahí acierta el
@@ -47,10 +71,11 @@ en los 4.773 partidos posteriores que pudimos evaluar».
 | Vista | Datos y transformación | Marca y mapeo | Escalas y motivo |
 |---|---|---|---|
 | Calidad | Perfil candidato; conteo por superficie/estado | Barras; cantidad→x, superficie→y, estado→color | Lineal desde 0: compara longitudes |
-| Victorias | Participación de test por condición y estilo; media de resultado, bootstrap por torneo | Punto+regla; tasa→x, condición→y, estilo→yOffset/color/forma; intervalo→x y x2 | 20–80 %, igual en las tres filas; son puntos, no barras; referencia 50 % |
-| Comparación | Mismos partidos, proporción correcta por modelo | Barras+texto; accuracy→x, modelo→y | 0–100 %; no agrandar 0,29pp con eje cortado |
+| Aces/resto (sección 2) | Tasas z dentro de cada superficie; regresión Altair | Puntos+recta; aces→x, resto→y | Lineal, no parte de 0: son puntos |
+| Coeficientes | Coeficientes del modelo ampliado | Barras; coeficiente→x, variable→y, bloque→color | −0,6 a 0,6, simétrica: a la derecha favorece al primero del par |
+| Victorias (evidencia) | Participación de test por condición y estilo; media de resultado, bootstrap por torneo | Punto+regla; tasa→x, condición→y, estilo→yOffset/color/forma; intervalo→x y x2 | 20–80 %, igual en las tres filas; son puntos, no barras; referencia 50 % |
+| Comparación | Mismos partidos, proporción correcta del piso y los dos modelos | Barras+texto; accuracy→x, modelo→y | 0–100 %; no agrandar 0,29pp con eje cortado |
 | PCA | Perfiles z; proyección sólo para mostrar | Puntos; PC1/PC2→posición, estilo→color y forma | Dominios globales fijos incluso al filtrar |
-| Aces/resto | Tasas z; regresión Altair | Puntos+recta; aces→x, resto→y | Lineal; puntos permiten rango sin empezar en0 |
 | Centros | Medias z por estilo/rasgo | Puntos; z→x, rasgo→y, estilo→color/forma | Misma escala de desvíos para siete rasgos |
 | Calibración | Predicciones test; 8 bins cuantiles | Puntos+línea; p media→x, frecuencia→y | Ambos 0–1; diagonal ideal |
 | Distancias | Caso nuevo estandarizado; norma euclídea | Barras; distancia→x, estilo→y/color | Desde0; menor es más cercano, no probabilidad |
@@ -127,6 +152,10 @@ versión actual abre cada tasa según quién llega mejor rankeado y recorta la e
 Este corte se agregó después de ver el test. Es descriptivo y no toca ningún modelo:
 decirlo antes de que lo pregunten.
 
+Después ese gráfico salió del tallo. Al leer la consigna completa, la sección dos tenía que
+cerrar la Entrega 2 y estaba mostrando un resultado de E3. Su lugar lo tomó aces contra resto,
+que estaba escondido en un desplegable, y victorias pasó a la evidencia del modelo.
+
 Esto describe una revisión del artefacto; no afirmar que cada integrante hizo un
 ensayo anterior que no hizo. Cada uno debe practicar el gráfico que le pregunten.
 
@@ -149,6 +178,17 @@ Se registra la diferencia, sin inventar la causa. El mapa conserva el snapshot E
 y el análisis nuevo usa partidos con su hash. La app publica esa auditoría.
 La correlación estandarizada de la nube mostrada es−0,5025, no el−0,58 citado para
 otra etapa/filtro del EDA. Los números se calculan sobre la población del gráfico.
+
+## Si cambian los datos
+
+```powershell
+cd entrega4
+python build.py --pipeline ../airflow-atp/include/output
+```
+
+Toma los CSV del DAG, reentrena con semilla 42 y genera `dist/`. Después hay que correr las
+pruebas, subir `dist/` y revisar los textos de conclusión. Las hipótesis de E2 requieren
+reejecutar ese notebook.
 
 ## Antes de ir al aula
 

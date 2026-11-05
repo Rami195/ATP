@@ -33,6 +33,17 @@ assert.equal(flips.filter(m=>right(m.p_ranking,m)).length,flip.ranking_right);
 assert.equal(flips.filter(m=>right(m.p_estilos,m)).length,flip.styles_right);
 assert.ok(Math.abs(flip.net_matches/pred.matches.length-report.comparison.delta_accuracy)<1e-12);
 assert.equal(report.association_rank.length,9);
+// La evidencia del modelo: lo que exige el «Cómo lo sabemos», recalculado desde los partidos.
+assert.ok(report.candidates.every(c=>c.anios===4&&c.log_loss_desvio>0&&c.accuracy_desvio>0));
+assert.ok(report.reliance.sin_ranking>report.reliance.completo);
+const upsets=pred.matches.filter(m=>(m.rank_a<m.rank_b)!==(m.gana_a===1));
+const upsetRow=report.mistakes.find(m=>m.categoria==='Ganó el peor rankeado');
+assert.equal(upsets.length,upsetRow.n);
+assert.ok(Math.abs(upsets.filter(m=>right(m.p_estilos,m)).length/upsets.length-upsetRow.accuracy)<1e-12);
+// El embudo sólo baja, y termina en el universo del mapa.
+const counts=data.stats.funnel.filter(f=>f.unidad==='perfiles').map(f=>f.filas);
+assert.ok(counts.every((n,i)=>!i||n<=counts[i-1]));assert.equal(counts.at(-1),data.profiles.length);
+assert.equal(data.stats.hypotheses.length,6);assert.ok(data.stats.hypotheses.some(h=>h.estado==='Se sostuvo')&&data.stats.hypotheses.some(h=>h.estado==='No se sostuvo'));
 const catalog=JSON.parse(fs.readFileSync('dist/enfrentamientos.json','utf8'));
 assert.equal(new Set(catalog.profiles.map(p=>p.season+'|'+p.surface+'|'+p.id)).size,catalog.profiles.length);
 for(const p of catalog.profiles){

@@ -41,7 +41,17 @@ Marquesini, Luciano · Martinez, Ramiro
     └── src/          # incluye features.py (historial sin fuga, dataset A/B)
 ```
 
-## Cómo correrlo
+## Cómo correr todo
+
+| Etapa | Qué correr | Qué deja |
+|---|---|---|
+| Datos | DAG `atp_ingest` en `airflow-atp/` | CSV de partidos y jugadores |
+| Análisis | Notebook de `entrega2/` | Hipótesis y columnas decididas |
+| Modelo y app | `python build.py --pipeline ../airflow-atp/include/output` en `entrega4/` | Modelos reentrenados con semilla 42 y `entrega4/dist/` |
+| Publicación | Ver [`entrega4/PUBLICACION.md`](entrega4/PUBLICACION.md) | La aplicación en GitHub Pages |
+
+Sin correr el DAG, `python build.py` reconstruye la app con la versión guardada en
+`entrega4/inputs/`. Los notebooks de E3 y E4 se regeneran con `python crear_notebooks.py`.
 
 **Con Airflow** (lo que se defiende en la Entrega 1):
 

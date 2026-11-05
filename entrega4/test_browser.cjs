@@ -31,7 +31,7 @@ const marks=page=>page.$$eval('#explorar svg path[aria-roledescription="point"]'
     const {page,loaded}=await open(browser,1366,900,problems);report.load_ms=loaded;
     // Los dos gráficos del simulador nacen dentro de un bloque oculto.
     await sleep(300);const first=await widths(page);
-    for(const id of ['calidad','victorias','rendimiento','enfrentamiento','explorar','distancias'])assert.ok(first[id]>300,id+' ancho '+first[id]);
+    for(const id of ['calidad','relacion','rendimiento','enfrentamiento','explorar','distancias'])assert.ok(first[id]>300,id+' ancho '+first[id]);
     // Abrir cada desplegable y volver a medir, sin redimensionar la ventana.
     await page.evaluate(()=>document.querySelectorAll('details').forEach(d=>{d.open=true;}));await sleep(600);
     const opened=await widths(page);for(const [id,w] of Object.entries(opened))assert.ok(w>200,id+' abierto, ancho '+w);

@@ -21,6 +21,7 @@ COLS = ['tasa_aces','tasa_dobles_faltas','primer_saque_dentro','efectividad_segu
 SUPS = ['cemento','clay','grass']
 MAP = {'Hard':'cemento','Clay':'clay','Grass':'grass'}
 STATS = ['ace','df','svpt','1stIn','1stWon','2ndWon','SvGms','bpSaved','bpFaced']
+SURFACE_LABELS = {'cemento':'Cemento','clay':'Polvo de ladrillo','grass':'Césped'}
 PAIRS = [(0,1),(0,2),(1,2)]
 
 
@@ -136,6 +137,37 @@ def bootstrap_delta(test,p0,p1,repetitions=2000):
             'accuracy_ci95':intervals[:,1].tolist(),'resamples':repetitions,'tournaments':len(dif)}
 
 
+def by_year(dates,y,p):
+    """Media y desvío entre años de validación: cuánto cambia el resultado de un año a otro."""
+    scores=pd.DataFrame({'year':pd.to_datetime(dates).dt.year.to_numpy(),'y':y,'p':p})
+    loss,accuracy=np.array([(log_loss(g.y,g.p,labels=[0,1]),((g.p>=.5)==g.y).mean()) for _,g in scores.groupby('year')]).T
+    return {'log_loss_media':float(loss.mean()),'log_loss_desvio':float(loss.std(ddof=1)),
+            'accuracy_media':float(accuracy.mean()),'accuracy_desvio':float(accuracy.std(ddof=1)),'anios':len(loss)}
+
+
+def coefficient_label(name,styles):
+    fixed={'log(rank_b/rank_a)':'Ventaja de ranking','log_ratio × clay':'Ranking × polvo de ladrillo',
+           'log_ratio × grass':'Ranking × césped','log_ratio × best_of5':'Ranking × cinco sets'}
+    if name in fixed:return fixed[name]
+    surface,_,a,_,b=name.replace(':','').split()
+    short={'Restadores sólidos':'Restadores','Sacadores de potencia':'Sacadores','Saque frágil':'Saque frágil'}
+    return f"{SURFACE_LABELS[surface]}: {short[styles[int(a)]]} vs. {short[styles[int(b)]]}"
+
+
+def mistakes(test,p,y):
+    """Aciertos del modelo por grupo de partidos, para ver dónde falla."""
+    gap=np.abs(np.log(test.rank_b.to_numpy()/test.rank_a.to_numpy()))
+    best_won=(test.rank_a<test.rank_b).to_numpy()==(y==1)
+    groups=[(np.where(best_won,'Ganó el mejor rankeado','Ganó el peor rankeado'),'Resultado',['Ganó el mejor rankeado','Ganó el peor rankeado']),
+            (pd.qcut(gap,3,labels=['Rankings parecidos','Distancia media','Distancia grande']).astype(str),'Distancia de ranking',['Rankings parecidos','Distancia media','Distancia grande']),
+            (test.surface.map(SURFACE_LABELS).to_numpy(),'Superficie',list(SURFACE_LABELS.values())),
+            (np.where(test.best_of.eq(5),'Cinco sets','Tres sets'),'Formato',['Tres sets','Cinco sets'])]
+    right=(p>=.5)==y
+    rows=[{'grupo':group,'categoria':c,'n':int((values==c).sum()),'accuracy':float(right[values==c].mean())}
+          for values,group,order in groups for c in order]
+    return rows
+
+
 def association_rows(sub,repetitions=1000):
     """Tasa de victoria por estilo, con IC95 % remuestreando torneos completos."""
     by_tournament=sub.groupby(['tourney_id','estilo']).gano.agg(['sum','count']).unstack('estilo',fill_value=0)
@@ -180,7 +212,7 @@ def main(path=None):
         for c in [.01,.1,1,10]:
             lr=LogisticRegression(C=c,fit_intercept=False,max_iter=2000,solver='lbfgs',random_state=42).fit(x[train],y[train])
             p=lr.predict_proba(x[val])[:,1]; score=log_loss(y[val],p)
-            options.append((score,c)); candidates.append({'modelo':name,'C':c,'log_loss_validacion':float(score)})
+            options.append((score,c)); candidates.append({'modelo':name,'C':c,'log_loss_validacion':float(score),**by_year(data.fecha[val],y[val],p)})
         score,c=min(options)
         lr=LogisticRegression(C=c,fit_intercept=False,max_iter=2000,solver='lbfgs',random_state=42).fit(x[~testmask],y[~testmask])
         p=lr.predict_proba(x[testmask])[:,1]; predictions[name]=p; reports[name]=metrics(y[testmask],p)
@@ -188,6 +220,8 @@ def main(path=None):
         # Control de la implementación portable y de simetría.
         portable=1/(1+np.exp(-(x[testmask]@lr.coef_[0])))
         np.testing.assert_allclose(p,portable,atol=1e-12)
+    floor=by_year(data.fecha[val],data.gana_a[val].to_numpy(),(data.rank_a[val]<data.rank_b[val]).astype(float).to_numpy())
+    validation_floor={k:floor[k] for k in ['accuracy_media','accuracy_desvio','anios']}
     test=data[testmask].copy(); y=test.gana_a.to_numpy()
     ranking_pred=(test.rank_a<test.rank_b).to_numpy()
     reports['Gana el mejor rankeado']={'accuracy':float(accuracy_score(y,ranking_pred)),'auc':None,'log_loss':None,'brier':None}
@@ -218,11 +252,19 @@ def main(path=None):
                       'ranking_right':int(((p0>=.5)==y)[changed].sum()),'styles_right':int(((p1>=.5)==y)[changed].sum())}
     favorite_changes['net_matches']=favorite_changes['styles_right']-favorite_changes['ranking_right']
     assert abs(favorite_changes['net_matches']/len(y)-difference['delta_accuracy'])<1e-12
+    # En qué se apoya: el mismo modelo, apagando un bloque de coeficientes por vez.
+    full=exports['Ranking + contexto + estilos']
+    x,_=features(test,True); beta=np.array(full['coef']); is_rank=np.array([n.startswith('log') for n in full['features']])
+    loss_with=lambda keep:float(log_loss(y,1/(1+np.exp(-(x@(beta*keep)))),labels=[0,1]))
+    reliance={'completo':loss_with(np.ones_like(beta)),'sin_estilos':loss_with(is_rank),'sin_ranking':loss_with(~is_rank)}
+    coefficients=[{'variable':coefficient_label(n,model['names']),'coef':float(c),'bloque':'Ranking' if rank else 'Estilos'}
+                  for n,c,rank in zip(full['features'],full['coef'],is_rank)]
     counts={'raw':len(raw),'valid_surface_non_walkover':len(matches),'eligible':len(data),'train':int(train.sum()),'validation':int(val.sum()),'test':int(testmask.sum()),
             'test_candidates':int(matches.fecha.ge('2023-01-01').sum()),'target_balance_test':float(y.mean())}
     report={'counts':counts,'metrics':reports,'comparison':difference,'selected_by_validation':selected,'candidates':candidates,
             'calibration':calibration,'association':association,'association_rank':association_rank,'best_ranked_share':best_ranked,
-            'favorite_changes':favorite_changes,'source_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),
+            'favorite_changes':favorite_changes,'validation_floor':validation_floor,'mistakes':mistakes(test,predictions[selected],y),
+            'reliance':reliance,'coefficients':coefficients,'source_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),
             'protocol':{'train':'2000–2018','validation':'2019–2022','test':'2023–2025','cluster_fit':'hasta 2018, congelado',
                         'history':'Sólo fechas de inicio de torneo estrictamente anteriores. Excluye todos los partidos de la misma fecha.',
                         'scope':'Ambos jugadores con >=20 partidos previos en superficie, cobertura >=80%, siete tasas definidas y ranking válido.'}}

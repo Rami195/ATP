@@ -55,6 +55,24 @@ las conclusiones son editoriales: si se cambia el experimento, revisar esos text
 
 ## Regenerar la cadena cuando cambian los datos
 
+Un solo comando toma lo que produjo el pipeline, reentrena con la misma semilla y genera
+la aplicación:
+
+```powershell
+python build.py --pipeline ../airflow-atp/include/output
+```
+
+Busca los `atp_jugadores_*.csv` y `atp_partidos_*.csv` más recientes, reentrena K-means
+(mismo filtro, k=3 y semilla 42), corre la ampliación predictiva y el catálogo de
+enfrentamientos, reemplaza `inputs/` y genera `dist/`. Sobre los datos del 23/09/2026,
+1.223 de los 1.224 perfiles quedan con el mismo estilo que en E3 (ARI 0,998). Si el
+modelo o el universo cambian, los textos de conclusión también hay que revisarlos.
+
+Las hipótesis de la Entrega 2 salen de `../entrega2/resultados/fichas_hipotesis.csv`:
+si cambian los datos, primero hay que reejecutar ese notebook.
+
+El detalle paso a paso, por si hay que correr una etapa suelta:
+
 1. En `../airflow-atp`, ejecutar `astro dev start`, disparar `atp_ingest` con las
    temporadas deseadas y obtener ambos CSV fechados en `include/output/`.
 2. Ejecutar EDA y clustering en los notebooks de `../entrega2` y `../entrega3`.
@@ -155,12 +173,11 @@ es **−0,5025**. No se copió el ≈−0,58 de otra etapa/filtro de EDA al grá
 ## Consigna y Unidad 4
 
 - Portada: una conclusión y tres números que sostienen sus dos mitades.
-- Tallo: calidad del universo; asociación estilo-victorias, con el ranking como
-  control; aporte predictivo. Cada sección tiene título afirmativo, gráfico y
-  evidencia cerrada por defecto.
-- Copa: simulador de enfrentamientos por superficie y jugadores; panorama de todos
-  los perfiles, filtros de superficie/estilo/experiencia/nombre, detalle por tooltip,
-  clic y selector accesible; asignación de un caso nuevo.
+- Tallo: los datos (E1), lo que encontramos (E2) y el modelo (E3). Cada sección tiene
+  título afirmativo, gráfico y un «Cómo lo sabemos» cerrado con lo que pide la consigna.
+- Copa: primero Explorá, con panorama de todos los perfiles, filtros de superficie/
+  estilo/experiencia/nombre y detalle por tooltip, clic y selector accesible. Después
+  Probá el modelo: simulador de enfrentamientos y asignación de un perfil nuevo.
 - Modo avanzado del simulador: casos históricos con features previas y posibilidad
   de editar 14 tasas, dos rankings, superficie y formato.
 - Gramática: `build.py` declara datos, tipos, marcas, transformaciones y escalas.
@@ -195,7 +212,5 @@ descargadas de jsDelivr, paquetes oficiales. Licencias BSD-3-Clause conservadas 
 
 ## Publicación
 
-Servir todo `dist/` desde la raíz del hosting estático. La configuración de Sites
-queda en `.openai/hosting.json`; no crear un segundo proyecto para actualizarlo.
-La URL y el estado confirmado de publicación se registran en `PUBLICACION.md`.
-La consigna exige acceso público sin instalar nada; un enlace privado no la cumple.
+Se publica en **GitHub Pages**, desde el repositorio del grupo, que es una de las dos
+formas que pide la consigna. Los pasos y la URL están en `PUBLICACION.md`.

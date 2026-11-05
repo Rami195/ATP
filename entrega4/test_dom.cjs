@@ -21,6 +21,10 @@ const change=async(id,value,event='change')=>{el(id).value=value;el(id).dispatch
   assert.equal(el('duel-favorite-styles').textContent,'Sin favorito claro');assert.equal(el('duel-output').hidden,false);
   // Portada, sección 2 y sección 3 toman sus números del informe, no del HTML.
   assert.equal(el('hero-net').textContent,'14');assert.equal(el('flip-count').textContent,'112');assert.equal(el('flip-rank').textContent,'63');assert.equal(el('flip-style').textContent,'49');
+  for(const id of ['funnel-body','hyp-body','validation-body','tuning-body','test-body','mistakes-body'])assert.ok(el(id).children.length>=3,id);
+  assert.match(el('funnel-body').textContent,/77\.954 partidos/);assert.match(el('funnel-body').textContent,/1\.224 perfiles/);
+  assert.match(el('hyp-body').textContent,/No se sostuvo/);assert.match(el('hyp-h6').textContent,/r = −0,05/);
+  assert.match(el('validation-body').textContent,/0,6289 ± 0,0126/);assert.match(el('rely-no-rank').textContent,/0,692/);
   assert.match(el('best-return').textContent,/53,8/);assert.match(el('best-fragile').textContent,/33,4/);assert.match(el('duel-conclusion').textContent,/112/);
   // Buscador: encuentra por cualquier parte del nombre, sin importar tildes ni mayúsculas.
   const search=el('duel-search-a'),list=el('duel-list-a'),found=()=>Array.from(list.querySelectorAll('[role=option]')).map(li=>li.firstChild.textContent);

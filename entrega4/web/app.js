@@ -1,16 +1,17 @@
 'use strict';
 const $=id=>document.getElementById(id);
-const fmt=(n,d=0)=>Number(n).toLocaleString('es-AR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const fmt=(n,d=0)=>Number(n).toLocaleString('es-AR',{minimumFractionDigits:d,maximumFractionDigits:d}).replace('-','−');
 const pct=(n,d=1)=>fmt(n*100,d)+' %';
 const views={};let data,predictive,matchupCatalog,filtered=[];
 async function json(path){const r=await fetch(path);if(!r.ok)throw new Error('No se pudo cargar '+path);return r.json();}
 const LOCALE={decimal:',',thousands:'.',grouping:[3],currency:['$','']};
 // En pantallas angostas la leyenda va en columna y el título del eje se alinea para no cortarse.
-function fitNarrow(spec){if(window.innerWidth<600){spec.config.legend.columns=1;spec.config.axisX={titleAnchor:'end'};}return spec;}
+function fitNarrow(spec){if(window.innerWidth<600){spec.config.legend.columns=1;spec.config.axis.labelLimit=150;spec.config.axisX={titleAnchor:'end'};}return spec;}
 async function embed(name){const spec=fitNarrow(await json('charts/'+name+'.json'));const result=await vegaEmbed('#'+name,spec,{actions:false,renderer:'svg',formatLocale:LOCALE,logLevel:vega.Error});views[name]=result.view;return result.view;}
 // Vega mide el contenedor al cargar y en cada resize: un gráfico oculto arranca con ancho 0.
 const refit=()=>window.dispatchEvent(new Event('resize'));
 function text(id,value){if($(id))$(id).textContent=value;}
+function fillTable(id,rows){$(id).replaceChildren(...rows.map(cells=>{const row=document.createElement('tr');for(const cell of cells){const td=document.createElement('td');td.textContent=cell;row.append(td);}return row;}));}
 function option(value,label){const o=document.createElement('option');o.value=value;o.textContent=label;return o;}
 function updateDataset(name,dataset,rows){return views[name].change(dataset,vega.changeset().remove(()=>true).insert(rows)).runAsync();}
 function filterProfiles(){
@@ -218,21 +219,40 @@ async function runMatchup(event){
     refit();
   }catch(error){text('duel-error',error.message);$('duel-output').hidden=true;}
 }
+function showEvidence(r){
+  const hypothesis=id=>data.stats.hypotheses.find(h=>h.id===id),number=h=>h.medida+' = '+fmt(h.valor,2);
+  fillTable('funnel-body',data.stats.funnel.map(f=>[f.paso,fmt(f.filas)+' '+f.unidad,f.motivo]));
+  fillTable('hyp-body',data.stats.hypotheses.map(h=>[h.id,h.hipotesis,number(h),fmt(h.n),h.estado]));
+  for(const id of ['h2','h5','h6'])text('hyp-'+id,number(hypothesis(id.toUpperCase())));
+  const best=name=>r.candidates.filter(c=>c.modelo===name).sort((a,b)=>a.log_loss_validacion-b.log_loss_validacion)[0];
+  const spread=(c,key,d,scale=1,unit='')=>fmt(c[key+'_media']*scale,d)+' ± '+fmt(c[key+'_desvio']*scale,d)+unit;
+  const models=['Ranking + contexto','Ranking + contexto + estilos'].map(best),[base,styles]=models;
+  fillTable('validation-body',[['Piso: gana el mejor rankeado','—','—',spread(r.validation_floor,'accuracy',2,100,' %')],...models.map(c=>[c.modelo,fmt(c.C,2),spread(c,'log_loss',4),spread(c,'accuracy',2,100,' %')])]);
+  text('validation-note','La diferencia de log-loss a favor del ampliado es de '+fmt(base.log_loss_media-styles.log_loss_media,4)+', menos que el desvío entre años ('+fmt(base.log_loss_desvio,4)+'). Por eso ganar en validación no alcanzaba para esperar una mejora en el test.');
+  fillTable('tuning-body',r.candidates.filter(c=>c.modelo===r.selected_by_validation).map(c=>[fmt(c.C,2)+(c.C===best(c.modelo).C?' · elegido':''),fmt(c.log_loss_validacion,5),spread(c,'log_loss',4)]));
+  const metric=(label,m)=>[label,pct(m.accuracy,2),m.auc===null?'—':fmt(m.auc,3),m.log_loss===null?'—':fmt(m.log_loss,4),m.brier===null?'—':fmt(m.brier,4)];
+  fillTable('test-body',[metric('Ranking + contexto',r.metrics['Ranking + contexto']),metric('Ranking + contexto + estilos',r.metrics['Ranking + contexto + estilos']),metric('Piso: gana el mejor rankeado',r.metrics['Gana el mejor rankeado']),metric('Probabilidad constante 50 %',r.metrics['Azar 50/50'])]);
+  fillTable('mistakes-body',r.mistakes.map(m=>[m.grupo,m.categoria,fmt(m.n),pct(m.accuracy)]));
+  text('balance',pct(r.counts.target_balance_test));text('floor-acc',pct(r.metrics['Gana el mejor rankeado'].accuracy,2));
+  for(const [id,value] of [['n-train',r.counts.train],['n-val',r.counts.validation],['n-test',r.counts.test],['n-valid',r.counts.valid_surface_non_walkover],['n-eligible',r.counts.eligible],['n-tournaments',r.comparison.tournaments],['n-resamples',r.comparison.resamples]])text(id,fmt(value));
+  text('delta-loss',fmt(r.comparison.delta_log_loss,5));text('delta-loss-ci',r.comparison.log_loss_ci95.map(x=>fmt(x,5)).join(' a '));
+  text('rely-full',fmt(r.reliance.completo,4));text('rely-no-rank',fmt(r.reliance.sin_ranking,4));text('rely-no-style',fmt(r.reliance.sin_estilos,4));
+}
 async function main(){
   [data,predictive,matchupCatalog]=await Promise.all([json('datos.json'),json('prediccion.json'),json('enfrentamientos.json')]);
   document.querySelectorAll('[data-stat]').forEach(e=>e.textContent=fmt(data.stats[e.dataset.stat],e.dataset.stat==='silhouette'?3:0));
-  text('corr',fmt(data.stats.correlation,2));text('low-sil',fmt(data.stats.below025*100));text('pca-total',fmt((data.stats.pca[0]+data.stats.pca[1])*100,1));
+  document.querySelectorAll('.corr').forEach(e=>e.textContent=fmt(data.stats.correlation,2));text('corr-raw',fmt(data.stats.correlation_raw,2));text('low-sil',fmt(data.stats.below025*100));text('pca-total',fmt((data.stats.pca[0]+data.stats.pca[1])*100,1));
   text('count-power',fmt(data.stats.counts['Sacadores de potencia']));text('count-return',fmt(data.stats.counts['Restadores sólidos']));text('count-fragile',fmt(data.stats.counts['Saque frágil']));
   text('surface-counts',Object.entries(data.stats.surface_counts).map(([s,n])=>fmt(n)+' en '+data.model.surfaces[s].toLocaleLowerCase()).join(', '));
   text('audit-note',data.stats.source_differences+' tasas de '+data.stats.profiles_source_differences+' perfiles difieren del Silver local. Los gráficos de estilos conservan la instantánea guardada en E3 (Z y escalador exacto). El análisis predictivo se reconstruye desde partidos.');
-  const r=predictive.report;text('test-count',fmt(r.counts.test));text('test-coverage',pct(r.counts.test/r.counts.test_candidates));
+  const r=predictive.report;showEvidence(r);text('test-count',fmt(r.counts.test));text('test-coverage',pct(r.counts.test/r.counts.test_candidates));
   text('rank-acc',pct(r.metrics['Ranking + contexto'].accuracy,2));text('style-acc',pct(r.metrics['Ranking + contexto + estilos'].accuracy,2));
   text('hero-rank',pct(r.metrics['Ranking + contexto'].accuracy,2));text('hero-style',pct(r.metrics['Ranking + contexto + estilos'].accuracy,2));text('hero-matches',fmt(r.counts.test));
   const flips=r.favorite_changes;text('hero-net',fmt(Math.abs(flips.net_matches)));text('flip-count',fmt(flips.changed));text('flip-rank',fmt(flips.ranking_right));text('flip-style',fmt(flips.styles_right));
   text('win-return',pct(r.association.find(x=>x.surface==='Todas'&&x.estilo==='Restadores sólidos').winrate));text('best-return',pct(r.best_ranked_share['Restadores sólidos']));text('best-fragile',pct(r.best_ranked_share['Saque frágil']));
   text('delta-accuracy',fmt(r.comparison.delta_accuracy*100,2)+' puntos porcentuales');text('delta-ci',r.comparison.accuracy_ci95.map(x=>fmt(x*100,2)).join(' a ')+' puntos porcentuales');
   const all=r.association.filter(x=>x.surface==='Todas');text('win-summary',all.map(x=>x.estilo+': '+pct(x.winrate)+' ('+fmt(x.n)+' participaciones)').join(' · '));
-  await Promise.all(['calidad','relacion','grupos','explorar','centros','distancias','comparacion','victorias','rendimiento','calibracion','ganador','enfrentamiento','rasgos-enfrentamiento'].map(embed));
+  await Promise.all(['calidad','relacion','grupos','explorar','centros','distancias','comparacion','victorias','rendimiento','calibracion','coeficientes','ganador','enfrentamiento','rasgos-enfrentamiento'].map(embed));
   // Los gráficos en detalles cerrados se redimensionan al abrirse.
   document.querySelectorAll('details').forEach(d=>d.addEventListener('toggle',()=>{if(d.open)requestAnimationFrame(refit);}));
   views.explorar.addEventListener('click',(_,item)=>{const clave=item&&item.datum&&item.datum.clave;if(clave&&filtered.some(p=>p.clave===clave)){$('profile-select').value=clave;showDetail();}});

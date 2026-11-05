@@ -2,33 +2,29 @@
 
 ## Estado
 
-**Pendiente de republicar.** `dist/` tiene la versión final, con el simulador de
-enfrentamientos, pero la URL pública sigue sirviendo la versión 1, sin simulador.
+**Pendiente.** La consigna admite GitHub Pages o Streamlit Community Cloud, desde el
+repositorio del grupo. Esta app es una página HTML, así que corresponde **GitHub Pages**.
+La URL va a ser <https://rami195.github.io/ATP/>.
 
-URL pública: <https://atp-estilos-5k10-entrega4.superpoppy259.chatgpt.site>
+La versión de `chatgpt.site` fue un paso intermedio: está desactualizada y no es una de
+las dos formas de la consigna. No usarla para la entrega.
 
-Último despliegue confirmado (versión 1), 4 de noviembre de 2026, 21:22
-(America/Argentina/Buenos_Aires). Estado devuelto por Sites: **succeeded**. Acceso: **public**.
+## Cómo publicar
 
-- Proyecto: `appgprj_6aebc6a4f75081919b70e1158086f8c6`
-- Versión: `appgprj_6aebc6a4f75081919b70e1158086f8c6~appgver_1c608f1756a48191817c54e7c367f7d0`
-- Despliegue: `appgdep_6aebcc4153b48191a8f76b2b51511087`
-- Commit publicado: `049e10fe02a4f51e0736a1805194334ca7cbf21a`
+Con `dist/` ya generada y commiteada en `main`, desde la carpeta `Proyecto`:
 
-## Cómo actualizarla
+```powershell
+git subtree push --prefix entrega4/dist origin gh-pages
+```
 
-La copia de trabajo Git de Sites se conserva fuera del repositorio académico, en
-`CienciaDatos/_publicacion_sites/atp-estilos/`, y ya está sincronizada con la versión
-final. Así `Proyecto/entrega4` sigue siendo una carpeta normal que el grupo puede
-versionar en su repositorio.
+Después, una sola vez, en <https://github.com/Rami195/ATP/settings/pages>: en **Source**
+elegir **Deploy from a branch**, en **Branch** elegir `gh-pages` y `/ (root)`, y **Save**.
+GitHub tarda uno o dos minutos.
 
-Para publicar, solicitar una credencial temporal y seguir el helper del mismo Site, como
-indica `plan/CONTINUAR_ENTREGA4.md`. Esas herramientas son de Codex. No crear otro Site
-ni guardar tokens en archivos.
+Cada vez que cambie la app hay que regenerar, commitear, pushear `main` y repetir el
+`git subtree push`.
 
-`dist/` es un sitio estático: también puede publicarse en cualquier hosting estático,
-como GitHub Pages. Si se cambia de hosting, actualizar la URL en este archivo.
+## Antes de la entrega
 
-Después de publicar, abrir la URL desde otra computadora y sin sesión, y comprobar que
-aparece la sección «Tu cancha. Tu enfrentamiento.». También se puede correr
-`node test_browser.cjs <url>` contra la URL pública.
+Abrir la URL desde otra computadora y sin sesión, y comprobar que carga. También se puede
+correr `node test_browser.cjs https://rami195.github.io/ATP/`.

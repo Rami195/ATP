@@ -54,42 +54,82 @@
     {
       "modelo": "Ranking + contexto",
       "C": 0.01,
-      "log_loss_validacion": 0.6322861522147618
+      "log_loss_validacion": 0.6322861522147618,
+      "log_loss_media": 0.6316121015259394,
+      "log_loss_desvio": 0.011356609722797333,
+      "accuracy_media": 0.6285440378507736,
+      "accuracy_desvio": 0.02210485236254713,
+      "anios": 4
     },
     {
       "modelo": "Ranking + contexto",
       "C": 0.1,
-      "log_loss_validacion": 0.6323553066323883
+      "log_loss_validacion": 0.6323553066323883,
+      "log_loss_media": 0.6316854609093105,
+      "log_loss_desvio": 0.011421516140866419,
+      "accuracy_media": 0.6285440378507736,
+      "accuracy_desvio": 0.02210485236254713,
+      "anios": 4
     },
     {
       "modelo": "Ranking + contexto",
       "C": 1,
-      "log_loss_validacion": 0.6323634863857432
+      "log_loss_validacion": 0.6323634863857432,
+      "log_loss_media": 0.6316941535279768,
+      "log_loss_desvio": 0.011427816117582035,
+      "accuracy_media": 0.6285440378507736,
+      "accuracy_desvio": 0.02210485236254713,
+      "anios": 4
     },
     {
       "modelo": "Ranking + contexto",
       "C": 10,
-      "log_loss_validacion": 0.6323643194846161
+      "log_loss_validacion": 0.6323643194846161,
+      "log_loss_media": 0.6316950388980085,
+      "log_loss_desvio": 0.011428444083336665,
+      "accuracy_media": 0.6285440378507736,
+      "accuracy_desvio": 0.02210485236254713,
+      "anios": 4
     },
     {
       "modelo": "Ranking + contexto + estilos",
       "C": 0.01,
-      "log_loss_validacion": 0.6299960246484407
+      "log_loss_validacion": 0.6299960246484407,
+      "log_loss_media": 0.6290904917274149,
+      "log_loss_desvio": 0.012360759826739549,
+      "accuracy_media": 0.6281858152660779,
+      "accuracy_desvio": 0.020024047310492874,
+      "anios": 4
     },
     {
       "modelo": "Ranking + contexto + estilos",
       "C": 0.1,
-      "log_loss_validacion": 0.6299100457170799
+      "log_loss_validacion": 0.6299100457170799,
+      "log_loss_media": 0.6289802454888697,
+      "log_loss_desvio": 0.012570295622051222,
+      "accuracy_media": 0.6279786396167921,
+      "accuracy_desvio": 0.018428676459028816,
+      "anios": 4
     },
     {
       "modelo": "Ranking + contexto + estilos",
       "C": 1,
-      "log_loss_validacion": 0.6298777425852631
+      "log_loss_validacion": 0.6298777425852631,
+      "log_loss_media": 0.628944246359123,
+      "log_loss_desvio": 0.012589838537427867,
+      "accuracy_media": 0.6278605221724906,
+      "accuracy_desvio": 0.018716512009086108,
+      "anios": 4
     },
     {
       "modelo": "Ranking + contexto + estilos",
       "C": 10,
-      "log_loss_validacion": 0.6298767850149103
+      "log_loss_validacion": 0.6298767850149103,
+      "log_loss_media": 0.6289430787302479,
+      "log_loss_desvio": 0.012591374675899988,
+      "accuracy_media": 0.6278605221724906,
+      "accuracy_desvio": 0.018716512009086108,
+      "anios": 4
     }
   ],
   "calibration": [
@@ -358,6 +398,145 @@
     "styles_right": 49,
     "net_matches": -14
   },
+  "validation_floor": {
+    "accuracy_media": 0.6285440378507736,
+    "accuracy_desvio": 0.02210485236254713,
+    "anios": 4
+  },
+  "mistakes": [
+    {
+      "grupo": "Resultado",
+      "categoria": "Ganó el mejor rankeado",
+      "n": 3077,
+      "accuracy": 0.9795255118622035
+    },
+    {
+      "grupo": "Resultado",
+      "categoria": "Ganó el peor rankeado",
+      "n": 1696,
+      "accuracy": 0.028891509433962265
+    },
+    {
+      "grupo": "Distancia de ranking",
+      "categoria": "Rankings parecidos",
+      "n": 1591,
+      "accuracy": 0.5449402891263356
+    },
+    {
+      "grupo": "Distancia de ranking",
+      "categoria": "Distancia media",
+      "n": 1593,
+      "accuracy": 0.6177024482109228
+    },
+    {
+      "grupo": "Distancia de ranking",
+      "categoria": "Distancia grande",
+      "n": 1589,
+      "accuracy": 0.7627438640654499
+    },
+    {
+      "grupo": "Superficie",
+      "categoria": "Cemento",
+      "n": 3199,
+      "accuracy": 0.6436386370740856
+    },
+    {
+      "grupo": "Superficie",
+      "categoria": "Polvo de ladrillo",
+      "n": 1382,
+      "accuracy": 0.638205499276411
+    },
+    {
+      "grupo": "Superficie",
+      "categoria": "Césped",
+      "n": 192,
+      "accuracy": 0.6354166666666666
+    },
+    {
+      "grupo": "Formato",
+      "categoria": "Tres sets",
+      "n": 4030,
+      "accuracy": 0.6280397022332507
+    },
+    {
+      "grupo": "Formato",
+      "categoria": "Cinco sets",
+      "n": 743,
+      "accuracy": 0.7160161507402423
+    }
+  ],
+  "reliance": {
+    "completo": 0.6306290020676707,
+    "sin_estilos": 0.6295336952561342,
+    "sin_ranking": 0.6921667413911913
+  },
+  "coefficients": [
+    {
+      "variable": "Ventaja de ranking",
+      "coef": 0.49832458769521826,
+      "bloque": "Ranking"
+    },
+    {
+      "variable": "Ranking × polvo de ladrillo",
+      "coef": 0.0036555934759047973,
+      "bloque": "Ranking"
+    },
+    {
+      "variable": "Ranking × césped",
+      "coef": -0.048269988394822175,
+      "bloque": "Ranking"
+    },
+    {
+      "variable": "Ranking × cinco sets",
+      "coef": 0.23708233428900619,
+      "bloque": "Ranking"
+    },
+    {
+      "variable": "Cemento: Restadores vs. Saque frágil",
+      "coef": 0.23620215255500338,
+      "bloque": "Estilos"
+    },
+    {
+      "variable": "Cemento: Restadores vs. Sacadores",
+      "coef": -0.006547064822554124,
+      "bloque": "Estilos"
+    },
+    {
+      "variable": "Cemento: Saque frágil vs. Sacadores",
+      "coef": -0.2153751223629447,
+      "bloque": "Estilos"
+    },
+    {
+      "variable": "Polvo de ladrillo: Restadores vs. Saque frágil",
+      "coef": 0.29449904633815605,
+      "bloque": "Estilos"
+    },
+    {
+      "variable": "Polvo de ladrillo: Restadores vs. Sacadores",
+      "coef": 0.1937469187732107,
+      "bloque": "Estilos"
+    },
+    {
+      "variable": "Polvo de ladrillo: Saque frágil vs. Sacadores",
+      "coef": 0.00969048255812681,
+      "bloque": "Estilos"
+    },
+    {
+      "variable": "Césped: Restadores vs. Saque frágil",
+      "coef": 0.17923906659819303,
+      "bloque": "Estilos"
+    },
+    {
+      "variable": "Césped: Restadores vs. Sacadores",
+      "coef": -0.18295405222049796,
+      "bloque": "Estilos"
+    },
+    {
+      "variable": "Césped: Saque frágil vs. Sacadores",
+      "coef": -0.2954134880832789,
+      "bloque": "Estilos"
+    }
+  ],
   "source_sha256": "8b07d8d92a3913b88c995e9cc3f3dcd38c679da71add779d8942383f5426f5ab",
   "protocol": {
     "train": "2000–2018",

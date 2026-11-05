@@ -123,6 +123,14 @@ n = informe['counts']['test']
 display(pd.Series(cambios))
 assert abs(cambios['net_matches']/n - informe['comparison']['delta_accuracy']) < 1e-12
 display(Markdown(f"Sumar estilos cambia al favorito en **{cambios['changed']} de {n}** partidos ({cambios['share']:.2%}). Ahí acierta el ranking {cambios['ranking_right']} veces y los estilos {cambios['styles_right']}: saldo de {cambios['net_matches']} partidos."))'''),
+md('''### Dónde se equivoca y en qué se apoya
+
+Los errores se miran por grupos de partidos. Para ver en qué se apoya, se apaga un bloque
+de coeficientes por vez en el mismo modelo ampliado y se mide la log-loss en el test.'''),
+code('''display(pd.DataFrame(informe['mistakes']).round(4))
+display(pd.Series(informe['reliance'], name='log-loss en test').round(4))
+display(pd.DataFrame(informe['coefficients']).round(3))
+alt.Chart.from_dict(graficos['coeficientes']).properties(width=650)'''),
 md('''## 5. Conclusión y límites
 
 La calibración muestra probabilidades medias y frecuencias reales en ocho grupos
@@ -175,34 +183,45 @@ df, calidad, modelo, stats = prepare(ROOT/'inputs/jugadores.csv', ROOT/'inputs/m
 informe=json.loads((ROOT/'inputs/informe.json').read_text(encoding='utf-8'))
 specs=charts(df,calidad,stats) | predictive_charts(informe)
 display(pd.Series(stats))'''),
-md('''## 1. No todos los perfiles tienen la misma evidencia
+md('''## 1. Los datos: sólo 1.224 de 3.470 perfiles tienen evidencia suficiente
 
 Se transforma el Silver ancho a jugador–superficie. Se filtra por ≥20 partidos,
-≥80 % de cobertura en saque/resto y tasas completas, como E3. Las combinaciones
-candidatas incluyen superficies sin partidos. Barras apiladas desde cero:
-superficie nominal a y, cantidad cuantitativa a x, calidad nominal al color.'''),
-code("alt.Chart.from_dict(specs['calidad']).properties(width=750)"),
-md('''## 2. Ganar más no prueba un estilo superior
+≥80 % de cobertura en saque/resto y tasas completas, como E3. Barras apiladas desde
+cero: superficie nominal a y, cantidad cuantitativa a x, estado nominal al color.
+La tabla es el embudo que muestra la app, con las filas de cada paso.'''),
+code('''display(pd.DataFrame(stats['funnel']))
+alt.Chart.from_dict(specs['calidad']).properties(width=750)'''),
+md('''## 2. Lo que encontramos: sacar fuerte y devolver bien tiran en sentidos opuestos
 
-Cada punto es la proporción de victorias de un estilo asignado antes del partido,
-sólo sobre test 2023–2025, en todos los partidos y según el jugador llegue como mejor
-o peor rankeado. Marcas de punto y regla; x para tasa e intervalo, y para la condición,
-yOffset, color y forma para el estilo. Escala de 20 a 80 %, igual en las tres filas:
-son puntos, no barras. El bootstrap agrupa por torneo.
+Es el hallazgo principal de la Entrega 2. Aces a x, resto a y, los dos estandarizados
+dentro de cada superficie; puntos y `transform_regression`. El título es la hipótesis H5,
+que queda inconclusa con la regla fijada antes de medir: el signo se cumple, pero no llega
+al umbral de −0,6. H2 se sostuvo y H6 no; la tabla trae las seis.'''),
+code('''display(pd.DataFrame(stats['hypotheses']).round(3))
+print('r estandarizada:', round(stats['correlation'], 4), '· r con tasas crudas:', round(stats['correlation_raw'], 4))
+alt.Chart.from_dict(specs['relacion']).properties(width=750)'''),
+md('''## 3. El modelo: acierta el 64 % y los estilos no lo mejoran
 
-Lo que prueba el título: los restadores ganan más, pero también llegan mejor rankeados.
-La distancia entre filas supera a la distancia entre estilos. Sigue siendo una asociación:
-el corte controla una sola variable, y entre los mejor rankeados los restadores siguen arriba.'''),
+Comparación sobre el mismo test posterior, con el piso al lado. Barras desde cero y
+texto con el valor exacto: se evita exagerar 0,29pp. El método completo está en la
+ampliación de E3. Acá van las tablas que muestra el «Cómo lo sabemos» del modelo.'''),
+code('''display(pd.DataFrame(informe['metrics']).T)
+display(pd.Series(informe['comparison']))
+display(pd.Series(informe['favorite_changes']))
+alt.Chart.from_dict(specs['rendimiento']).properties(width=750)'''),
+md('''Media y desvío entre los cuatro años de validación, y el ajuste de C.'''),
+code('''display(pd.DataFrame(informe['candidates']).round(4))
+display(pd.Series(informe['validation_floor'], name='piso en validación').round(4))'''),
+md('''Dónde se equivoca y en qué se apoya.'''),
+code('''display(pd.DataFrame(informe['mistakes']).round(4))
+display(pd.Series(informe['reliance'], name='log-loss en test').round(4))
+alt.Chart.from_dict(specs['coeficientes']).properties(width=750)'''),
+md('''¿Hay un estilo superior? Tasa de victorias por estilo, en todos los partidos y según
+quién llega mejor rankeado. Puntos y reglas; escala de 20 a 80 %, igual en las tres filas.
+Este corte se agregó después de ver el test: es descriptivo y no toca ningún modelo.'''),
 code('''display(pd.DataFrame(informe['association_rank']).round(4))
 display(pd.Series(informe['best_ranked_share'], name='Llega como mejor rankeado').round(4))
 alt.Chart.from_dict(specs['victorias']).properties(width=750)'''),
-md('''## 3. Agregar estilos no muestra una mejora clara sobre el ranking
-
-Comparación sobre el mismo test posterior. Barras desde cero, texto con el valor
-exacto y un intervalo de la diferencia en la evidencia: se evita exagerar 0,29pp.
-Las probabilidades y el método completo están en la ampliación de E3. La diferencia
-tiene un tamaño concreto: son los partidos donde los modelos eligen favoritos distintos.'''),
-code("display(pd.DataFrame(informe['metrics']).T)\ndisplay(pd.Series(informe['comparison']))\ndisplay(pd.Series(informe['favorite_changes']))\nalt.Chart.from_dict(specs['rendimiento']).properties(width=750)"),
 md('''## 4. La copa: panorama, filtro y detalle
 
 PC1 y PC2 son posiciones cuantitativas; estilo tiene color y forma constantes;
@@ -259,19 +278,19 @@ una causa no verificada. Ver la auditoría debajo.
 
 La primera versión de la app cerraba el relato con una nube PCA de tres estilos.
 Tras incorporar la pregunta faltante de ganadores, se cambió el gráfico principal
-final a la comparación con/sin estilos. La nube pasa a evidencia y exploración.
-La conclusión ahora responde la pregunta completa, no sólo muestra clusters.
+final a la comparación con/sin estilos. La nube pasó a evidencia y exploración.
 
-El gráfico de victorias también cambió. La primera versión tenía un punto por estilo en
-una escala de 0 a 100 %: mostraba que los estilos difieren, pero no que eso no alcanzara,
-que es lo que dice el título. La versión actual abre cada tasa según quién llega mejor
-rankeado y recorta la escala a 20–80 %, lo que además deja leer los intervalos.'''),
-code("display(pd.DataFrame(json.loads((ROOT/'inputs/auditoria_versiones.json').read_text(encoding='utf-8'))))\nalt.Chart.from_dict(specs['relacion']).properties(width=750)"),
+El gráfico de victorias cambió dos veces. Primero tenía un punto por estilo en una
+escala de 0 a 100 %: mostraba que los estilos difieren, pero no que eso no alcanzara, y
+los intervalos casi no se veían. Se abrió según quién llega mejor rankeado, con escala
+de 20 a 80 %. Después salió del tallo, porque la sección dos tiene que cerrar la Entrega 2:
+su lugar lo tomó aces contra resto, y victorias quedó en la evidencia del modelo.'''),
+code("display(pd.DataFrame(json.loads((ROOT/'inputs/auditoria_versiones.json').read_text(encoding='utf-8'))))"),
 md('''## 8. Cadena reproducible
 
-Airflow → CSV partidos/jugadores → EDA → clustering y ampliación predictiva →
-catálogo de enfrentamientos → `build.py` → JSON de datos/modelos y Altair → `dist/` →
-publicación estática. El README tiene comandos exactos. Las bibliotecas se sirven
+Airflow → CSV partidos/jugadores → `build.py --pipeline` → clustering, ampliación
+predictiva y catálogo con la misma semilla → JSON de datos/modelos y Altair → `dist/` →
+GitHub Pages. El README tiene comandos exactos. Las bibliotecas se sirven
 localmente, sin CDN. `VERIFICACION.md` detalla las pruebas, incluida la de Chrome real.''')]
 
 if __name__=='__main__':
