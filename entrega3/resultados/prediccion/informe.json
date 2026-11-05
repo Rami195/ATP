@@ -1,0 +1,370 @@
+{
+  "counts": {
+    "raw": 77474,
+    "valid_surface_non_walkover": 74918,
+    "eligible": 40268,
+    "train": 29781,
+    "validation": 5714,
+    "test": 4773,
+    "test_candidates": 8423,
+    "target_balance_test": 0.4957050073329143
+  },
+  "metrics": {
+    "Ranking + contexto": {
+      "accuracy": 0.6446679237376912,
+      "auc": 0.6975175602576452,
+      "log_loss": 0.6296717102106762,
+      "brier": 0.2200732714458487
+    },
+    "Ranking + contexto + estilos": {
+      "accuracy": 0.6417347580138277,
+      "auc": 0.6961667171791488,
+      "log_loss": 0.6306290020676707,
+      "brier": 0.22049778633702555
+    },
+    "Gana el mejor rankeado": {
+      "accuracy": 0.6446679237376912,
+      "auc": null,
+      "log_loss": null,
+      "brier": null
+    },
+    "Azar 50/50": {
+      "accuracy": 0.4957050073329143,
+      "auc": 0.5,
+      "log_loss": 0.6931471805599453,
+      "brier": 0.25
+    }
+  },
+  "comparison": {
+    "delta_log_loss": 0.0009572918569944235,
+    "log_loss_ci95": [
+      -0.0004136504830723851,
+      0.002367090711435759
+    ],
+    "delta_accuracy": -0.002933165723863398,
+    "accuracy_ci95": [
+      -0.007303686554486972,
+      0.0011387252331724
+    ],
+    "resamples": 2000,
+    "tournaments": 290
+  },
+  "selected_by_validation": "Ranking + contexto + estilos",
+  "candidates": [
+    {
+      "modelo": "Ranking + contexto",
+      "C": 0.01,
+      "log_loss_validacion": 0.6322861522147618
+    },
+    {
+      "modelo": "Ranking + contexto",
+      "C": 0.1,
+      "log_loss_validacion": 0.6323553066323883
+    },
+    {
+      "modelo": "Ranking + contexto",
+      "C": 1,
+      "log_loss_validacion": 0.6323634863857432
+    },
+    {
+      "modelo": "Ranking + contexto",
+      "C": 10,
+      "log_loss_validacion": 0.6323643194846161
+    },
+    {
+      "modelo": "Ranking + contexto + estilos",
+      "C": 0.01,
+      "log_loss_validacion": 0.6299960246484407
+    },
+    {
+      "modelo": "Ranking + contexto + estilos",
+      "C": 0.1,
+      "log_loss_validacion": 0.6299100457170799
+    },
+    {
+      "modelo": "Ranking + contexto + estilos",
+      "C": 1,
+      "log_loss_validacion": 0.6298777425852631
+    },
+    {
+      "modelo": "Ranking + contexto + estilos",
+      "C": 10,
+      "log_loss_validacion": 0.6298767850149103
+    }
+  ],
+  "calibration": [
+    {
+      "modelo": "Ranking + contexto",
+      "probabilidad_media": 0.20366561680990947,
+      "frecuencia_real": 0.21273031825795644
+    },
+    {
+      "modelo": "Ranking + contexto",
+      "probabilidad_media": 0.3267806777722662,
+      "frecuencia_real": 0.3411371237458194
+    },
+    {
+      "modelo": "Ranking + contexto",
+      "probabilidad_media": 0.4034291407082242,
+      "frecuencia_real": 0.4228187919463087
+    },
+    {
+      "modelo": "Ranking + contexto",
+      "probabilidad_media": 0.4638224286548941,
+      "frecuencia_real": 0.4312080536912752
+    },
+    {
+      "modelo": "Ranking + contexto",
+      "probabilidad_media": 0.5279040212151442,
+      "frecuencia_real": 0.5268456375838926
+    },
+    {
+      "modelo": "Ranking + contexto",
+      "probabilidad_media": 0.5889502799949813,
+      "frecuencia_real": 0.5946398659966499
+    },
+    {
+      "modelo": "Ranking + contexto",
+      "probabilidad_media": 0.6675286659665107,
+      "frecuencia_real": 0.6493288590604027
+    },
+    {
+      "modelo": "Ranking + contexto",
+      "probabilidad_media": 0.7961699787234238,
+      "frecuencia_real": 0.7872696817420436
+    },
+    {
+      "modelo": "Ranking + contexto + estilos",
+      "probabilidad_media": 0.20426356030016815,
+      "frecuencia_real": 0.21273031825795644
+    },
+    {
+      "modelo": "Ranking + contexto + estilos",
+      "probabilidad_media": 0.32732985436292983,
+      "frecuencia_real": 0.3500837520938023
+    },
+    {
+      "modelo": "Ranking + contexto + estilos",
+      "probabilidad_media": 0.4028819467620402,
+      "frecuencia_real": 0.40436241610738255
+    },
+    {
+      "modelo": "Ranking + contexto + estilos",
+      "probabilidad_media": 0.46407623754966215,
+      "frecuencia_real": 0.4489112227805695
+    },
+    {
+      "modelo": "Ranking + contexto + estilos",
+      "probabilidad_media": 0.5281047271178171,
+      "frecuencia_real": 0.5226130653266332
+    },
+    {
+      "modelo": "Ranking + contexto + estilos",
+      "probabilidad_media": 0.5894928702683156,
+      "frecuencia_real": 0.5889261744966443
+    },
+    {
+      "modelo": "Ranking + contexto + estilos",
+      "probabilidad_media": 0.6676591430354945,
+      "frecuencia_real": 0.6476510067114094
+    },
+    {
+      "modelo": "Ranking + contexto + estilos",
+      "probabilidad_media": 0.7951897901280095,
+      "frecuencia_real": 0.7906197654941374
+    }
+  ],
+  "association": [
+    {
+      "surface": "Todas",
+      "estilo": "Restadores sólidos",
+      "n": 6293,
+      "winrate": 0.5142221515970126,
+      "lower": 0.5072689379507813,
+      "upper": 0.5205993322420283
+    },
+    {
+      "surface": "Todas",
+      "estilo": "Sacadores de potencia",
+      "n": 2547,
+      "winrate": 0.48606203376521395,
+      "lower": 0.4709849814183674,
+      "upper": 0.5014667294936894
+    },
+    {
+      "surface": "Todas",
+      "estilo": "Saque frágil",
+      "n": 706,
+      "winrate": 0.4235127478753541,
+      "lower": 0.38925937893131135,
+      "upper": 0.45817148074369185
+    },
+    {
+      "surface": "cemento",
+      "estilo": "Restadores sólidos",
+      "n": 4217,
+      "winrate": 0.5179037230258478,
+      "lower": 0.5099488936046981,
+      "upper": 0.5250491074738752
+    },
+    {
+      "surface": "cemento",
+      "estilo": "Sacadores de potencia",
+      "n": 1740,
+      "winrate": 0.4810344827586207,
+      "lower": 0.4643884574931747,
+      "upper": 0.498116959127234
+    },
+    {
+      "surface": "cemento",
+      "estilo": "Saque frágil",
+      "n": 441,
+      "winrate": 0.4036281179138322,
+      "lower": 0.36190758495973796,
+      "upper": 0.4426668789808917
+    },
+    {
+      "surface": "clay",
+      "estilo": "Restadores sólidos",
+      "n": 1866,
+      "winrate": 0.5042872454448017,
+      "lower": 0.49212354085474863,
+      "upper": 0.5156325347501819
+    },
+    {
+      "surface": "clay",
+      "estilo": "Sacadores de potencia",
+      "n": 706,
+      "winrate": 0.4985835694050991,
+      "lower": 0.4678532257840592,
+      "upper": 0.5327286260859558
+    },
+    {
+      "surface": "clay",
+      "estilo": "Saque frágil",
+      "n": 192,
+      "winrate": 0.4635416666666667,
+      "lower": 0.38774708836414146,
+      "upper": 0.5288508064516129
+    },
+    {
+      "surface": "grass",
+      "estilo": "Restadores sólidos",
+      "n": 210,
+      "winrate": 0.5285714285714286,
+      "lower": 0.4682359307359307,
+      "upper": 0.561266943912316
+    },
+    {
+      "surface": "grass",
+      "estilo": "Sacadores de potencia",
+      "n": 101,
+      "winrate": 0.48514851485148514,
+      "lower": 0.4107028388278388,
+      "upper": 0.5789473684210527
+    },
+    {
+      "surface": "grass",
+      "estilo": "Saque frágil",
+      "n": 73,
+      "winrate": 0.4383561643835616,
+      "lower": 0.32215635738831616,
+      "upper": 0.5775018532246108
+    }
+  ],
+  "association_rank": [
+    {
+      "condicion": "Todos sus partidos",
+      "estilo": "Restadores sólidos",
+      "n": 6293,
+      "winrate": 0.5142221515970126,
+      "lower": 0.5072689379507813,
+      "upper": 0.5205993322420283
+    },
+    {
+      "condicion": "Todos sus partidos",
+      "estilo": "Sacadores de potencia",
+      "n": 2547,
+      "winrate": 0.48606203376521395,
+      "lower": 0.4709849814183674,
+      "upper": 0.5014667294936894
+    },
+    {
+      "condicion": "Todos sus partidos",
+      "estilo": "Saque frágil",
+      "n": 706,
+      "winrate": 0.4235127478753541,
+      "lower": 0.38925937893131135,
+      "upper": 0.45817148074369185
+    },
+    {
+      "condicion": "Llega como mejor rankeado",
+      "estilo": "Restadores sólidos",
+      "n": 3388,
+      "winrate": 0.6599763872491146,
+      "lower": 0.6411374886855008,
+      "upper": 0.6785783499446291
+    },
+    {
+      "condicion": "Llega como mejor rankeado",
+      "estilo": "Sacadores de potencia",
+      "n": 1149,
+      "winrate": 0.6161879895561357,
+      "lower": 0.5875389928698753,
+      "upper": 0.6414472749282876
+    },
+    {
+      "condicion": "Llega como mejor rankeado",
+      "estilo": "Saque frágil",
+      "n": 236,
+      "winrate": 0.5635593220338984,
+      "lower": 0.5019876856211517,
+      "upper": 0.6293023511316194
+    },
+    {
+      "condicion": "Llega como peor rankeado",
+      "estilo": "Restadores sólidos",
+      "n": 2905,
+      "winrate": 0.3442340791738382,
+      "lower": 0.3285396199935226,
+      "upper": 0.3618596738835904
+    },
+    {
+      "condicion": "Llega como peor rankeado",
+      "estilo": "Sacadores de potencia",
+      "n": 1398,
+      "winrate": 0.3791130185979971,
+      "lower": 0.3526129676368862,
+      "upper": 0.404777759540017
+    },
+    {
+      "condicion": "Llega como peor rankeado",
+      "estilo": "Saque frágil",
+      "n": 470,
+      "winrate": 0.35319148936170214,
+      "lower": 0.309449492920976,
+      "upper": 0.3947396656878247
+    }
+  ],
+  "best_ranked_share": {
+    "Restadores sólidos": 0.5383759733036707,
+    "Sacadores de potencia": 0.45111896348645464,
+    "Saque frágil": 0.3342776203966006
+  },
+  "favorite_changes": {
+    "changed": 112,
+    "share": 0.023465325790907186,
+    "ranking_right": 63,
+    "styles_right": 49,
+    "net_matches": -14
+  },
+  "source_sha256": "8b07d8d92a3913b88c995e9cc3f3dcd38c679da71add779d8942383f5426f5ab",
+  "protocol": {
+    "train": "2000–2018",
+    "validation": "2019–2022",
+    "test": "2023–2025",
+    "cluster_fit": "hasta 2018, congelado",
+    "history": "Sólo fechas de inicio de torneo estrictamente anteriores. Excluye todos los partidos de la misma fecha.",
+    "scope": "Ambos jugadores con >=20 partidos previos en superficie, cobertura >=80%, siete tasas definidas y ranking válido."
+  }
+}

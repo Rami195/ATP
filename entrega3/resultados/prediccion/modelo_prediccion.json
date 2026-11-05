@@ -1,0 +1,279 @@
+{
+  "styles": {
+    "columns": [
+      "tasa_aces",
+      "tasa_dobles_faltas",
+      "primer_saque_dentro",
+      "efectividad_segundo",
+      "bp_salvados",
+      "puntos_ganados_resto",
+      "bp_convertidos"
+    ],
+    "means": {
+      "cemento": {
+        "tasa_aces": 0.07887424596465784,
+        "tasa_dobles_faltas": 0.04184423173952181,
+        "primer_saque_dentro": 0.5924600798787322,
+        "efectividad_segundo": 0.49959714185842097,
+        "bp_salvados": 0.600075299744185,
+        "puntos_ganados_resto": 0.3582078469445375,
+        "bp_convertidos": 0.3838595769334828
+      },
+      "clay": {
+        "tasa_aces": 0.05288238821187251,
+        "tasa_dobles_faltas": 0.03631161213436869,
+        "primer_saque_dentro": 0.6045633208496548,
+        "efectividad_segundo": 0.49312797877672115,
+        "bp_salvados": 0.5867094387542191,
+        "puntos_ganados_resto": 0.3831098540106039,
+        "bp_convertidos": 0.40207594389225937
+      },
+      "grass": {
+        "tasa_aces": 0.09517975999861646,
+        "tasa_dobles_faltas": 0.03951950570402715,
+        "primer_saque_dentro": 0.6214755313639106,
+        "efectividad_segundo": 0.519255138937317,
+        "bp_salvados": 0.6358332583408429,
+        "puntos_ganados_resto": 0.34713661775884247,
+        "bp_convertidos": 0.373369790016012
+      }
+    },
+    "stds": {
+      "cemento": {
+        "tasa_aces": 0.03556838921003933,
+        "tasa_dobles_faltas": 0.011927800149199919,
+        "primer_saque_dentro": 0.03926792441270377,
+        "efectividad_segundo": 0.0240178713415786,
+        "bp_salvados": 0.036918402856956835,
+        "puntos_ganados_resto": 0.02504622692679397,
+        "bp_convertidos": 0.03601373760902297
+      },
+      "clay": {
+        "tasa_aces": 0.024109304778206,
+        "tasa_dobles_faltas": 0.010967366747973108,
+        "primer_saque_dentro": 0.04405067414738408,
+        "efectividad_segundo": 0.024956082905782422,
+        "bp_salvados": 0.03623567713801855,
+        "puntos_ganados_resto": 0.025216522071849382,
+        "bp_convertidos": 0.03779819949500393
+      },
+      "grass": {
+        "tasa_aces": 0.04281721484387904,
+        "tasa_dobles_faltas": 0.013718708822071662,
+        "primer_saque_dentro": 0.03688357101522753,
+        "efectividad_segundo": 0.026608982174249483,
+        "bp_salvados": 0.04331722088279566,
+        "puntos_ganados_resto": 0.024254302036798125,
+        "bp_convertidos": 0.03900264095427783
+      }
+    },
+    "centers": [
+      [
+        -0.3862059011207905,
+        -0.6065354368649051,
+        0.43885633355675496,
+        0.4422754519601501,
+        0.09318345039507785,
+        0.5645794291080359,
+        0.4763296875825402
+      ],
+      [
+        -0.32958231783988523,
+        0.5554017074845803,
+        -0.5298193551943448,
+        -0.8562945140222675,
+        -0.7484241888470834,
+        0.054750495760168084,
+        0.050155579293569987
+      ],
+      [
+        1.0924962008194987,
+        0.2693263390098993,
+        -0.022376829936802768,
+        0.4119787405021845,
+        0.8524885779149028,
+        -1.0214027056950357,
+        -0.8670890671047584
+      ]
+    ],
+    "names": [
+      "Restadores sólidos",
+      "Saque frágil",
+      "Sacadores de potencia"
+    ],
+    "fit_until": "2018-12-31",
+    "n_profiles_fit": 914,
+    "ranges": {
+      "cemento": {
+        "tasa_aces": [
+          0.012459621596677434,
+          0.23965567551794573
+        ],
+        "tasa_dobles_faltas": [
+          0.0195822454308094,
+          0.09233305853256389
+        ],
+        "primer_saque_dentro": [
+          0.4339511621065019,
+          0.7121212121212122
+        ],
+        "efectividad_segundo": [
+          0.4256,
+          0.5727279449826223
+        ],
+        "bp_salvados": [
+          0.5071428571428571,
+          0.723342939481268
+        ],
+        "puntos_ganados_resto": [
+          0.2741412832145172,
+          0.42468391716137216
+        ],
+        "bp_convertidos": [
+          0.226890756302521,
+          0.5517241379310345
+        ]
+      },
+      "clay": {
+        "tasa_aces": [
+          0.007106310403638431,
+          0.19154791154791154
+        ],
+        "tasa_dobles_faltas": [
+          0.01449619771863118,
+          0.07796610169491526
+        ],
+        "primer_saque_dentro": [
+          0.4804088586030664,
+          0.7452399954395166
+        ],
+        "efectividad_segundo": [
+          0.41109530583214793,
+          0.5680390788555478
+        ],
+        "bp_salvados": [
+          0.410958904109589,
+          0.725752508361204
+        ],
+        "puntos_ganados_resto": [
+          0.283358171882762,
+          0.46863255276091353
+        ],
+        "bp_convertidos": [
+          0.23563218390804597,
+          0.5197368421052632
+        ]
+      },
+      "grass": {
+        "tasa_aces": [
+          0.021602160216021602,
+          0.2565847021090485
+        ],
+        "tasa_dobles_faltas": [
+          0.013428451531682753,
+          0.08612873980054397
+        ],
+        "primer_saque_dentro": [
+          0.5272311212814645,
+          0.7201156812339332
+        ],
+        "efectividad_segundo": [
+          0.43896424167694204,
+          0.5938058368076236
+        ],
+        "bp_salvados": [
+          0.5020242914979757,
+          0.7586206896551724
+        ],
+        "puntos_ganados_resto": [
+          0.2785532994923858,
+          0.4018932874354561
+        ],
+        "bp_convertidos": [
+          0.225,
+          0.4788732394366197
+        ]
+      }
+    }
+  },
+  "models": {
+    "Ranking + contexto": {
+      "coef": [
+        0.5121615574826488,
+        0.014099044412829494,
+        -0.05044215092943709,
+        0.22969446913121133
+      ],
+      "intercept": 0,
+      "features": [
+        "log(rank_b/rank_a)",
+        "log_ratio × clay",
+        "log_ratio × grass",
+        "log_ratio × best_of5"
+      ],
+      "C": 0.01,
+      "validation_log_loss": 0.6322861522147618,
+      "expanded": false
+    },
+    "Ranking + contexto + estilos": {
+      "coef": [
+        0.49832458769521826,
+        0.0036555934759047973,
+        -0.048269988394822175,
+        0.23708233428900619,
+        0.23620215255500338,
+        -0.006547064822554124,
+        -0.2153751223629447,
+        0.29449904633815605,
+        0.1937469187732107,
+        0.00969048255812681,
+        0.17923906659819303,
+        -0.18295405222049796,
+        -0.2954134880832789
+      ],
+      "intercept": 0,
+      "features": [
+        "log(rank_b/rank_a)",
+        "log_ratio × clay",
+        "log_ratio × grass",
+        "log_ratio × best_of5",
+        "cemento: estilo 0 vs 1",
+        "cemento: estilo 0 vs 2",
+        "cemento: estilo 1 vs 2",
+        "clay: estilo 0 vs 1",
+        "clay: estilo 0 vs 2",
+        "clay: estilo 1 vs 2",
+        "grass: estilo 0 vs 1",
+        "grass: estilo 0 vs 2",
+        "grass: estilo 1 vs 2"
+      ],
+      "C": 10,
+      "validation_log_loss": 0.6298767850149103,
+      "expanded": true
+    }
+  },
+  "selected": "Ranking + contexto + estilos",
+  "surfaces": [
+    "cemento",
+    "clay",
+    "grass"
+  ],
+  "pairs": [
+    [
+      0,
+      1
+    ],
+    [
+      0,
+      2
+    ],
+    [
+      1,
+      2
+    ]
+  ],
+  "rank_range": [
+    1.0,
+    1821.0
+  ]
+}
