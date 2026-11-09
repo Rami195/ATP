@@ -10,8 +10,26 @@ function fitNarrow(spec){if(window.innerWidth<600){spec.config.legend.columns=1;
 async function embed(name){const spec=fitNarrow(await json('charts/'+name+'.json'));const result=await vegaEmbed('#'+name,spec,{actions:false,renderer:'svg',formatLocale:LOCALE,logLevel:vega.Error});views[name]=result.view;return result.view;}
 // Vega mide el contenedor al cargar y en cada resize: un gráfico oculto arranca con ancho 0.
 const refit=()=>window.dispatchEvent(new Event('resize'));
+function explainModel(){
+  const m=predictive.model,chosen=m.models[m.selected],idx=name=>m.styles.names.indexOf(name);
+  const R=idx('Restadores sólidos'),F=idx('Saque frágil'),S=idx('Sacadores de potencia');
+  const p=(surface,bestOf,a,b,rankA=10,rankB=20)=>pct(ATPModel.predict(chosen,rankA,rankB,surface,bestOf,a,b),0);
+  const raw=(surface,bestOf)=>ATPModel.predict(chosen,10,20,surface,bestOf,R,R);
+  text('ex-rank',p('cemento',3,R,R));text('ex-base',p('cemento',3,R,R));text('ex-bo5',p('cemento',5,R,R));text('ex-grass-rank',p('grass',3,R,R));
+  for(const [id,v] of [['bar-base',raw('cemento',3)],['bar-bo5',raw('cemento',5)],['bar-grass',raw('grass',3)]])if($(id))$(id).style.width=Math.max(4,Math.min(100,(v-.5)/.2*100))+'%';
+  text('ex-clay-rf',p('clay',3,R,F,20,20));text('ex-clay-rs',p('clay',3,R,S,20,20));text('ex-grass-sr',p('grass',3,S,R,20,20));
+  const all=(cls,v)=>document.querySelectorAll('.'+cls).forEach(e=>e.textContent=v),logit=q=>Math.log(q/(1-q)),L=Math.log(2),c=chosen.coef;
+  const sc=(surface,bestOf,a,b,rA,rB)=>logit(ATPModel.predict(chosen,rA,rB,surface,bestOf,a,b));
+  all('ex-rank-v',p('cemento',3,R,R));all('ex-grass-v',p('grass',3,R,R));all('ex-bo5-v',p('cemento',5,R,R));
+  text('ex-coef',fmt(c[0],3));all('ex-coef-v',fmt(c[0],3));text('ex-score',fmt(sc('cemento',3,R,R,10,20),3));all('ex-score-v',fmt(sc('cemento',3,R,R,10,20),3));
+  text('w-base',fmt(sc('cemento',3,R,R,10,20)/L,3));text('w-clay',fmt(sc('clay',3,R,R,10,20)/L,3));text('w-grass',fmt(sc('grass',3,R,R,10,20)/L,3));text('w-bo5',fmt(sc('cemento',5,R,R,10,20)/L,3));
+  text('p-clay',p('clay',3,R,R));text('bo5-more',pct(sc('cemento',5,R,R,10,20)/sc('cemento',3,R,R,10,20)-1,0));
+  const sign=v=>(v>=0?'+':'')+fmt(v,3);
+  text('s-clay-rf',sign(sc('clay',3,R,F,20,20)));text('s-clay-rs',sign(sc('clay',3,R,S,20,20)));text('s-grass-sr',sign(sc('grass',3,S,R,20,20)));
+  all('ex-clay-rf-v',p('clay',3,R,F,20,20));all('ex-clay-rs-v',p('clay',3,R,S,20,20));all('ex-grass-sr-v',p('grass',3,S,R,20,20));
+}
 function text(id,value){if($(id))$(id).textContent=value;}
-function fillTable(id,rows){$(id).replaceChildren(...rows.map(cells=>{const row=document.createElement('tr');for(const cell of cells){const td=document.createElement('td');td.textContent=cell;row.append(td);}return row;}));}
+function fillTable(id,rows){if(!$(id))return;$(id).replaceChildren(...rows.map(cells=>{const row=document.createElement('tr');for(const cell of cells){const td=document.createElement('td');td.textContent=cell;row.append(td);}return row;}));}
 function option(value,label){const o=document.createElement('option');o.value=value;o.textContent=label;return o;}
 function updateDataset(name,dataset,rows){return views[name].change(dataset,vega.changeset().remove(()=>true).insert(rows)).runAsync();}
 function filterProfiles(){
@@ -227,10 +245,12 @@ function showEvidence(r){
   const best=name=>r.candidates.filter(c=>c.modelo===name).sort((a,b)=>a.log_loss_validacion-b.log_loss_validacion)[0];
   const spread=(c,key,d,scale=1,unit='')=>fmt(c[key+'_media']*scale,d)+' ± '+fmt(c[key+'_desvio']*scale,d)+unit;
   const models=['Ranking + contexto','Ranking + contexto + estilos'].map(best),[base,styles]=models;
-  fillTable('validation-body',[['Piso: gana el mejor rankeado','—','—',spread(r.validation_floor,'accuracy',2,100,' %')],...models.map(c=>[c.modelo,fmt(c.C,2),spread(c,'log_loss',4),spread(c,'accuracy',2,100,' %')])]);
-  text('validation-note','La diferencia de log-loss a favor del ampliado es de '+fmt(base.log_loss_media-styles.log_loss_media,4)+', menos que el desvío entre años ('+fmt(base.log_loss_desvio,4)+'). Por eso ganar en validación no alcanzaba para esperar una mejora en el test.');
+  fillTable('validation-body',[['Piso: gana el mejor rankeado','—',spread(r.validation_floor,'accuracy',2,100,' %')],...models.map(c=>[c.modelo,spread(c,'log_loss',4),spread(c,'accuracy',2,100,' %')])]);
+  text('validation-note','Con estilos, el log-loss mejora apenas '+fmt(base.log_loss_media-styles.log_loss_media,4)+', pero eso es mucho menos de lo que varía de un año a otro ('+fmt(base.log_loss_desvio,4)+'): es ruido. Por eso no esperábamos una mejora en el test, y no la hubo.');
+  explainModel();
+  text('chosen-c',String(best(r.selected_by_validation).C).replace('.',','));
   fillTable('tuning-body',r.candidates.filter(c=>c.modelo===r.selected_by_validation).map(c=>[fmt(c.C,2)+(c.C===best(c.modelo).C?' · elegido':''),fmt(c.log_loss_validacion,5),spread(c,'log_loss',4)]));
-  const metric=(label,m)=>[label,pct(m.accuracy,2),m.auc===null?'—':fmt(m.auc,3),m.log_loss===null?'—':fmt(m.log_loss,4),m.brier===null?'—':fmt(m.brier,4)];
+  const metric=(label,m)=>[label,pct(m.accuracy,2),m.log_loss===null?'—':fmt(m.log_loss,4)];
   fillTable('test-body',[metric('Ranking + contexto',r.metrics['Ranking + contexto']),metric('Ranking + contexto + estilos',r.metrics['Ranking + contexto + estilos']),metric('Piso: gana el mejor rankeado',r.metrics['Gana el mejor rankeado']),metric('Probabilidad constante 50 %',r.metrics['Azar 50/50'])]);
   fillTable('mistakes-body',r.mistakes.map(m=>[m.grupo,m.categoria,fmt(m.n),pct(m.accuracy)]));
   text('balance',pct(r.counts.target_balance_test));text('floor-acc',pct(r.metrics['Gana el mejor rankeado'].accuracy,2));

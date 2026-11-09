@@ -283,7 +283,7 @@ def charts(df, quality, stats):
         for col in LABELS:
             centroid_data.append({'estilo':name,'rasgo':LABELS[col],'z':float(g[col+'_z'].mean())})
     centers_chart=alt.Chart(pd.DataFrame(centroid_data)).mark_point(filled=True,size=90).encode(
-        y=alt.Y('rasgo:N',title=None,sort=list(LABELS.values())),x=alt.X('z:Q',title='Desvíos respecto de la superficie',scale=alt.Scale(domain=[-1.5,1.5])),
+        y=alt.Y('rasgo:N',title=None,sort=list(LABELS.values())),x=alt.X('z:Q',title='Desvíos estándar respecto del promedio de su superficie (0 = promedio)',scale=alt.Scale(domain=[-1.5,1.5])),
         color=color,shape=shape,tooltip=['estilo:N','rasgo:N',alt.Tooltip('z:Q',format='+.2f')]).properties(height=280)
     # Datos cambiados desde JavaScript; la gramática de estos gráficos también es Altair.
     distances = alt.Chart(alt.NamedData(name='distancias')).mark_bar().encode(
