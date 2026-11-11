@@ -299,7 +299,8 @@ async function main(){
   const r=predictive.report;showEvidence(r);text('test-count',fmt(r.counts.test));text('test-coverage',pct(r.counts.test/r.counts.test_candidates));
   text('rank-acc',pct(r.metrics['Ranking + contexto'].accuracy,2));text('style-acc',pct(r.metrics['Ranking + contexto + estilos'].accuracy,2));
   text('hero-rank',pct(r.metrics['Ranking + contexto'].accuracy,1));text('hero-style',pct(r.metrics['Ranking + contexto + estilos'].accuracy,1));text('hero-matches',fmt(r.counts.test));
-  const heroRate=c=>r.association_rank.find(x=>x.condicion===c&&x.estilo==='Restadores sólidos').winrate;text('hero-fav',pct(heroRate('Llega como mejor rankeado'),0));text('hero-dog',pct(heroRate('Llega como peor rankeado'),0));
+  const heroRate=c=>r.association_rank.find(x=>x.condicion===c&&x.estilo==='Restadores sólidos').winrate;text('hero-fav',pct(heroRate('Llega como mejor rankeado'),0));
+  const favRate=e=>r.association_rank.find(x=>x.condicion==='Llega como mejor rankeado'&&x.estilo===e).winrate;text('hero-fav-power',pct(favRate('Sacadores de potencia'),1));text('hero-fav-fragile',pct(favRate('Saque frágil'),1));
   const flips=r.favorite_changes;text('flip-count',fmt(flips.changed));text('flip-rank',fmt(flips.ranking_right));text('flip-style',fmt(flips.styles_right));
   text('win-return',pct(r.association.find(x=>x.surface==='Todas'&&x.estilo==='Restadores sólidos').winrate));text('best-return',pct(r.best_ranked_share['Restadores sólidos']));text('best-fragile',pct(r.best_ranked_share['Saque frágil']));
   text('delta-accuracy',fmt(r.comparison.delta_accuracy*100,2)+' puntos porcentuales');text('delta-ci',r.comparison.accuracy_ci95.map(x=>fmt(x*100,2)).join(' a ')+' puntos porcentuales');
