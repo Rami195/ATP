@@ -140,7 +140,7 @@
   </div></details>
   <p class="decide-foot">El empujón del estilo es chico al lado del ranking: por eso casi nunca cambia quién es el favorito.</p>
   <h4>La métrica y por qué</h4><p>Se elige por <strong>log-loss</strong>, porque la aplicación muestra probabilidades y esa métrica castiga una probabilidad mal puesta, no sólo un favorito errado. Se cuenta en <strong>accuracy</strong> porque se lee sola y las clases están balanceadas: A gana el <span id="balance"></span> del test.</p>
-  <h4>El piso</h4><p>Elegir siempre al mejor rankeado acierta <span id="floor-acc"></span> en el test. Ranking + contexto siempre elige al mejor rankeado, y por eso empata exactamente con el piso. Como piso probabilístico, P = 0,5 da log-loss 0,6931.</p>
+  <h4>El piso</h4><p>Elegir siempre al mejor rankeado acierta <span id="floor-acc"></span> en el test. Ranking + contexto siempre elige al mejor rankeado, y por eso empata exactamente con el piso.</p>
   <h4>Cómo se armó la validación</h4><p>Separamos los partidos por año, no al azar: si mezcláramos años, el modelo podría aprender del futuro.</p>
   <ul class="model-list">
   <li><strong>Entrenamiento:</strong> 2000–2018 (<span id="n-train"></span> partidos). Acá aprende el modelo.</li>
