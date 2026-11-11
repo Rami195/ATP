@@ -3,7 +3,7 @@ const $=id=>document.getElementById(id);
 const fmt=(n,d=0)=>Number(n).toLocaleString('es-AR',{minimumFractionDigits:d,maximumFractionDigits:d}).replace('-','−');
 const pct=(n,d=1)=>fmt(n*100,d)+' %';
 const views={};let data,predictive,matchupCatalog,filtered=[];
-async function json(path){const r=await fetch(path);if(!r.ok)throw new Error('No se pudo cargar '+path);return r.json();}
+async function json(path){const r=await fetch(path,{cache:'no-cache'});if(!r.ok)throw new Error('No se pudo cargar '+path);return r.json();}
 const LOCALE={decimal:',',thousands:'.',grouping:[3],currency:['$','']};
 // En pantallas angostas la leyenda va en columna y el título del eje se alinea para no cortarse.
 function fitNarrow(spec){if(window.innerWidth<600){spec.config.legend.columns=1;spec.config.axis.labelLimit=150;spec.config.axisX={titleAnchor:'end'};}return spec;}
@@ -26,7 +26,36 @@ function explainModel(){
   text('p-clay',p('clay',3,R,R));text('bo5-more',pct(sc('cemento',5,R,R,10,20)/sc('cemento',3,R,R,10,20)-1,0));
   const sign=v=>(v>=0?'+':'')+fmt(v,3);
   text('s-clay-rf',sign(sc('clay',3,R,F,20,20)));text('s-clay-rs',sign(sc('clay',3,R,S,20,20)));text('s-grass-sr',sign(sc('grass',3,S,R,20,20)));
+  try{workedExample(m,chosen,R,S);}catch(e){console.error(e);const d=document.querySelector('.decide-example');if(d)d.hidden=true;}text('tr-c',fmt(chosen.C,chosen.C<1?2:0));
   all('ex-clay-rf-v',p('clay',3,R,F,20,20));all('ex-clay-rs-v',p('clay',3,R,S,20,20));all('ex-grass-sr-v',p('grass',3,S,R,20,20));
+}
+// Un partido completo, con las mismas cuentas que modelo.js: variables, pesos, suma y función logística.
+function workedExample(m,chosen,a,b){
+  const ex={rankA:5,rankB:30,surface:'clay',bestOf:5};
+  const x=ATPModel.featureVector(ex.rankA,ex.rankB,ex.surface,ex.bestOf,a,b,true),c=chosen.coef;
+  const SURF={cemento:'Cemento',clay:'Polvo de ladrillo',grass:'Césped'};
+  const short={'Restadores sólidos':'Restador','Saque frágil':'Saque frágil','Sacadores de potencia':'Sacador'};
+  const label=name=>{
+    if(name==='log(rank_b/rank_a)')return 'Distancia de ranking';
+    if(name==='log_ratio × clay')return 'Ranking × polvo de ladrillo';
+    if(name==='log_ratio × grass')return 'Ranking × césped';
+    if(name==='log_ratio × best_of5')return 'Ranking × 5 sets';
+    const [s,i,j]=name.match(/^(\w+): estilo (\d) vs (\d)$/).slice(1);
+    return SURF[s]+' · '+short[m.styles.names[+i]]+' vs '+short[m.styles.names[+j]];
+  };
+  const rows=x.map((v,i)=>({v,w:c[i],name:chosen.features[i]})).filter(r=>r.v!==0);
+  const z=x.reduce((sum,v,i)=>sum+v*c[i],0),prob=ATPModel.predict(chosen,ex.rankA,ex.rankB,ex.surface,ex.bestOf,a,b);
+  if(Math.abs(prob-1/(1+Math.exp(-z)))>1e-12)throw new Error('El ejemplo no coincide con el modelo.');
+  const sign=v=>(v>=0?'+':'')+fmt(v,3);
+  fillTable('wx-body',rows.map(r=>[label(r.name),fmt(r.v,3),sign(r.w),sign(r.v*r.w)]));
+  const styleZ=rows.filter(r=>!r.name.startsWith('log')).reduce((s,r)=>s+r.v*r.w,0),noStyle=1/(1+Math.exp(-(z-styleZ)));
+  const one={'Restadores sólidos':'restador sólido','Saque frágil':'de saque frágil','Sacadores de potencia':'sacador de potencia'};
+  text('wx-match',SURF[ex.surface].toLocaleLowerCase()+', a '+ex.bestOf+' sets. Jugador A: n.º '+ex.rankA+', '+one[m.styles.names[a]]+'. Jugador B: n.º '+ex.rankB+', '+one[m.styles.names[b]]+'.');
+  document.querySelectorAll('.wx-ra').forEach(e=>e.textContent=ex.rankA);document.querySelectorAll('.wx-rb').forEach(e=>e.textContent=ex.rankB);
+  text('wx-d',fmt(Math.log(ex.rankB/ex.rankA),3));text('wx-z',sign(z));text('wx-zero',fmt(x.length-rows.length));
+  document.querySelectorAll('.wx-z-v').forEach(e=>e.textContent=fmt(z,3));text('wx-exp',fmt(Math.exp(-z),3));
+  text('wx-p',pct(prob,0));document.querySelectorAll('.wx-p-v').forEach(e=>e.textContent=pct(prob,0));text('wx-q',pct(1-prob,0));
+  text('wx-style','Sin el aporte del cruce de estilos ('+sign(styleZ)+' puntos), A tendría '+pct(noStyle,0)+': el estilo le suma '+fmt((prob-noStyle)*100,0)+' puntos porcentuales. Casi todo el trabajo lo hace el ranking.');
 }
 function text(id,value){if($(id))$(id).textContent=value;}
 function fillTable(id,rows){if(!$(id))return;$(id).replaceChildren(...rows.map(cells=>{const row=document.createElement('tr');for(const cell of cells){const td=document.createElement('td');td.textContent=cell;row.append(td);}return row;}));}
@@ -61,7 +90,7 @@ async function runModel(event){
     const warnings=[];if(r.outside.length)warnings.push('Fuera del rango observado: '+r.outside.map(c=>data.model.labels[c]).join(', ')+'.');if(r.far)warnings.push('Combinación poco habitual: supera el percentil 95 de distancia al centro.');if(r.boundary)warnings.push('Perfil de frontera: dos centros están a distancias parecidas.');
     $('warning').hidden=!warnings.length;text('warning',warnings.join(' '));
     await updateDataset('distancias','distancias',r.distances.map((d,i)=>({estilo:data.model.names[i],distancia:d})));
-    await updateDataset('comparacion','comparacion',data.model.columns.flatMap((c,j)=>[{rasgo:data.model.labels[c],z:r.z[j],serie:'Tu perfil'},{rasgo:data.model.labels[c],z:data.model.centers[r.index][j],serie:'Centro asignado'}]));
+    await updateDataset('comparacion','comparacion',data.model.columns.flatMap((c,j)=>[{rasgo:data.model.labels[c],z:r.z[j],serie:'Tu perfil',marca:'Tu perfil'},{rasgo:data.model.labels[c],z:data.model.centers[r.index][j],serie:'Centro asignado',marca:r.name}]));
   }catch(e){text('prediction','Revisá los valores');text('explanation','');text('warning',e.message);$('warning').hidden=false;await updateDataset('distancias','distancias',[]);await updateDataset('comparacion','comparacion',[]);}
 }
 function setupPredictor(){
@@ -254,7 +283,7 @@ function showEvidence(r){
   fillTable('test-body',[metric('Ranking + contexto',r.metrics['Ranking + contexto']),metric('Ranking + contexto + estilos',r.metrics['Ranking + contexto + estilos']),metric('Piso: gana el mejor rankeado',r.metrics['Gana el mejor rankeado']),metric('Probabilidad constante 50 %',r.metrics['Azar 50/50'])]);
   fillTable('mistakes-body',r.mistakes.map(m=>[m.grupo,m.categoria,fmt(m.n),pct(m.accuracy)]));
   text('balance',pct(r.counts.target_balance_test));text('floor-acc',pct(r.metrics['Gana el mejor rankeado'].accuracy,2));
-  for(const [id,value] of [['n-train',r.counts.train],['n-val',r.counts.validation],['n-test',r.counts.test],['n-valid',r.counts.valid_surface_non_walkover],['n-eligible',r.counts.eligible],['n-tournaments',r.comparison.tournaments],['n-resamples',r.comparison.resamples]])text(id,fmt(value));
+  for(const [id,value] of [['tr-train',r.counts.train],['tr-val',r.counts.validation],['n-train',r.counts.train],['n-val',r.counts.validation],['n-test',r.counts.test],['n-valid',r.counts.valid_surface_non_walkover],['n-eligible',r.counts.eligible],['n-tournaments',r.comparison.tournaments],['n-resamples',r.comparison.resamples]])text(id,fmt(value));
   text('delta-loss',fmt(r.comparison.delta_log_loss,5));text('delta-loss-ci',r.comparison.log_loss_ci95.map(x=>fmt(x,5)).join(' a '));
   text('rely-full',fmt(r.reliance.completo,4));text('rely-no-rank',fmt(r.reliance.sin_ranking,4));text('rely-no-style',fmt(r.reliance.sin_estilos,4));
 }
@@ -262,13 +291,16 @@ async function main(){
   [data,predictive,matchupCatalog]=await Promise.all([json('datos.json'),json('prediccion.json'),json('enfrentamientos.json')]);
   document.querySelectorAll('[data-stat]').forEach(e=>e.textContent=fmt(data.stats[e.dataset.stat],e.dataset.stat==='silhouette'?3:0));
   document.querySelectorAll('.corr').forEach(e=>e.textContent=fmt(data.stats.correlation,2));text('corr-raw',fmt(data.stats.correlation_raw,2));text('low-sil',fmt(data.stats.below025*100));text('pca-total',fmt((data.stats.pca[0]+data.stats.pca[1])*100,1));
+  text('hero-sil',fmt(data.stats.silhouette,2));
+  for(const [id,name] of [['hero-power','Sacadores de potencia'],['hero-return','Restadores sólidos'],['hero-fragile','Saque frágil']])text(id,fmt(data.stats.counts[name]));
   text('count-power',fmt(data.stats.counts['Sacadores de potencia']));text('count-return',fmt(data.stats.counts['Restadores sólidos']));text('count-fragile',fmt(data.stats.counts['Saque frágil']));
   text('surface-counts',Object.entries(data.stats.surface_counts).map(([s,n])=>fmt(n)+' en '+data.model.surfaces[s].toLocaleLowerCase()).join(', '));
   text('audit-note',data.stats.source_differences+' tasas de '+data.stats.profiles_source_differences+' perfiles difieren del Silver local. Los gráficos de estilos conservan la instantánea guardada en E3 (Z y escalador exacto). El análisis predictivo se reconstruye desde partidos.');
   const r=predictive.report;showEvidence(r);text('test-count',fmt(r.counts.test));text('test-coverage',pct(r.counts.test/r.counts.test_candidates));
   text('rank-acc',pct(r.metrics['Ranking + contexto'].accuracy,2));text('style-acc',pct(r.metrics['Ranking + contexto + estilos'].accuracy,2));
-  text('hero-rank',pct(r.metrics['Ranking + contexto'].accuracy,2));text('hero-style',pct(r.metrics['Ranking + contexto + estilos'].accuracy,2));text('hero-matches',fmt(r.counts.test));
-  const flips=r.favorite_changes;text('hero-net',fmt(Math.abs(flips.net_matches)));text('flip-count',fmt(flips.changed));text('flip-rank',fmt(flips.ranking_right));text('flip-style',fmt(flips.styles_right));
+  text('hero-rank',pct(r.metrics['Ranking + contexto'].accuracy,1));text('hero-style',pct(r.metrics['Ranking + contexto + estilos'].accuracy,1));text('hero-matches',fmt(r.counts.test));
+  const heroRate=c=>r.association_rank.find(x=>x.condicion===c&&x.estilo==='Restadores sólidos').winrate;text('hero-fav',pct(heroRate('Llega como mejor rankeado'),0));text('hero-dog',pct(heroRate('Llega como peor rankeado'),0));
+  const flips=r.favorite_changes;text('flip-count',fmt(flips.changed));text('flip-rank',fmt(flips.ranking_right));text('flip-style',fmt(flips.styles_right));
   text('win-return',pct(r.association.find(x=>x.surface==='Todas'&&x.estilo==='Restadores sólidos').winrate));text('best-return',pct(r.best_ranked_share['Restadores sólidos']));text('best-fragile',pct(r.best_ranked_share['Saque frágil']));
   text('delta-accuracy',fmt(r.comparison.delta_accuracy*100,2)+' puntos porcentuales');text('delta-ci',r.comparison.accuracy_ci95.map(x=>fmt(x*100,2)).join(' a ')+' puntos porcentuales');
   const all=r.association.filter(x=>x.surface==='Todas');text('win-summary',all.map(x=>x.estilo+': '+pct(x.winrate)+' ('+fmt(x.n)+' participaciones)').join(' · '));

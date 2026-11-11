@@ -42,7 +42,7 @@
     if(reduce||!('IntersectionObserver' in window))return;
     // Al terminar la entrada se quitan las clases, para que los efectos de hover vuelvan a funcionar.
     const settle=el=>{el.classList.remove('rv','in');el.style.transitionDelay='';};
-    const io=new IntersectionObserver(entries=>{for(const e of entries)if(e.isIntersecting){const el=e.target;el.classList.add('in');io.unobserve(el);el.addEventListener('transitionend',ev=>{if(ev.target===el&&ev.propertyName==='opacity')settle(el);});setTimeout(()=>settle(el),1600);}},{rootMargin:'0px 0px -8% 0px',threshold:.06});
+    const io=new IntersectionObserver(entries=>{for(const e of entries)if(e.isIntersecting){const el=e.target;el.classList.add('in');io.unobserve(el);el.addEventListener('transitionend',ev=>{if(ev.target===el&&ev.propertyName==='opacity')settle(el);});setTimeout(()=>settle(el),1600);}},{rootMargin:'0px 0px -8% 0px',threshold:0});
     blocks.forEach((b,i)=>{b.classList.add('rv');b.style.transitionDelay=((i%3)*.06)+'s';io.observe(b);});
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();

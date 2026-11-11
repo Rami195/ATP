@@ -176,3 +176,23 @@ html.anim .hero-art{animation:rise 1s .2s cubic-bezier(.2,.7,.2,1) both}
 
 /* ---------- Sin animaciones si el sistema lo pide ---------- */
 @media (prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}.bg-ball,.bg-ball-shadow{display:none}html.anim .rv{opacity:1;transform:none}}
+/* Números compuestos de la portada («66 % vs. 34 %»): las cifras heredan el tamaño del número. */
+.metrics strong span{font-size:inherit;color:inherit;display:inline;line-height:inherit;white-space:nowrap}
+.metrics strong:has(small){display:flex;align-items:center;gap:.3em}
+.metrics strong small{font-size:.42em;line-height:1.15;color:rgba(255,255,255,.72);text-shadow:none;font-weight:500;letter-spacing:0}
+.metrics strong+strong{margin-top:2px}
+.metrics strong+span{margin-top:10px;display:block}
+/* Los números dentro del texto de la portada siguen el renglón. */
+.metrics span span{display:inline;font-size:inherit;color:inherit;line-height:inherit}
+/* En pantallas angostas, las tres tarjetas de la portada van una debajo de la otra. */
+@media(max-width:700px){.metrics{grid-template-columns:1fr}.metrics>div,.metrics>div:first-child{padding:16px 6px;border-right:0;border-bottom:1px solid rgba(255,255,255,.12)}.metrics>div:last-child{border-bottom:0}.metrics strong{font-size:34px}.metrics span{font-size:13px}}
+/* Debajo de las tres tarjetas: cómo se entrenó y un partido calculado paso a paso. */
+.decide-train{background:white;border:1px solid var(--line);border-radius:20px;padding:18px 22px 6px;margin:22px 0 0;box-shadow:0 12px 32px rgba(20,48,42,.06)}
+.decide-train h5{font-size:17px;margin:0 0 6px}
+.decide-train p{font-size:14px;margin:0 0 12px}
+.decide-example{margin:16px 0}
+.wx-steps{padding-left:20px;font-size:14px}
+.wx-steps li{margin:0 0 12px}
+.wx-steps .decide-table{margin-top:10px}
+.wx-steps .decide-table td:not(:first-child),.wx-steps .decide-table th:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
+.wx-steps tfoot th{border-top:2px solid var(--ink)}
