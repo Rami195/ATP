@@ -2,9 +2,13 @@
 
 ## Estado
 
-**Pendiente.** La consigna admite GitHub Pages o Streamlit Community Cloud, desde el
-repositorio del grupo. Esta app es una página HTML, así que corresponde **GitHub Pages**.
-La URL va a ser <https://rami195.github.io/ATP/>.
+**Publicada** en GitHub Pages: <https://rami195.github.io/ATP/>, servida desde la rama
+`gh-pages`, que contiene exactamente `entrega4/dist` de `main`. La consigna admite GitHub
+Pages o Streamlit Community Cloud; esta app es una página HTML, así que corresponde
+GitHub Pages.
+
+Después de cualquier cambio en la app hay que volver a publicar (ver abajo): si no, la URL
+sigue mostrando la versión anterior.
 
 La versión de `chatgpt.site` fue un paso intermedio: está desactualizada y no es una de
 las dos formas de la consigna. No usarla para la entrega.

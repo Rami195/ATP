@@ -20,7 +20,7 @@ const change=async(id,value,event='change')=>{el(id).value=value;el(id).dispatch
   assert.equal(el('duel-style-a').textContent,'Restadores sólidos');assert.equal(el('duel-style-b').textContent,'Restadores sólidos');
   assert.equal(el('duel-favorite-styles').textContent,'Sin favorito claro');assert.equal(el('duel-output').hidden,false);
   // Portada, sección 2 y sección 3 toman sus números del informe, no del HTML.
-  assert.equal(el('hero-net').textContent,'14');assert.equal(el('flip-count').textContent,'112');assert.equal(el('flip-rank').textContent,'63');assert.equal(el('flip-style').textContent,'49');
+  assert.equal(el('hero-fav').textContent,'66 %');assert.equal(el('hero-dog').textContent,'34 %');assert.equal(el('flip-count').textContent,'112');assert.equal(el('flip-rank').textContent,'63');assert.equal(el('flip-style').textContent,'49');
   for(const id of ['funnel-body','validation-body','test-body','mistakes-body'])assert.ok(el(id).children.length>=3,id);
   assert.match(el('funnel-body').textContent,/77\.954 partidos/);assert.match(el('funnel-body').textContent,/1\.224 perfiles/);
   assert.match(el('hyp-h5').textContent,/r = −0,58/);

@@ -10,6 +10,7 @@ from pathlib import Path
 import argparse
 import hashlib
 import json
+import re
 import shutil
 import sys
 import numpy as np
@@ -26,7 +27,10 @@ ORDER = ['Sacadores de potencia', 'Restadores sólidos', 'Saque frágil']
 COLORS = ['#E69F00', '#56B4E9', '#009E73']
 SHAPES = ['circle', 'square', 'triangle-up']
 QUALITY = ['Con evidencia suficiente', 'Con partidos, sin evidencia suficiente', 'Sin partidos']
-SIDES = alt.Scale(domain=['A', 'B'], range=['#243D39', '#899B93'])
+# A y B tienen colores y formas propios: no repiten los de los estilos ni los de otro gráfico.
+SIDES = alt.Scale(domain=['A', 'B'], range=['#D55E00', '#7B4F9E'])
+SIDE_SHAPES = alt.Scale(domain=['A', 'B'], range=['diamond', 'cross'])
+YOU = 'Tu perfil'
 CONDITIONS = ['Todos sus partidos', 'Llega como mejor rankeado', 'Llega como peor rankeado']
 # Lo que necesitan los gráficos: el resto de las columnas queda en datos.json.
 # Texto corto de cada hipótesis de la Entrega 2; sus números salen de fichas_hipotesis.csv.
@@ -291,8 +295,8 @@ def charts(df, quality, stats):
         tooltip=['estilo:N',alt.Tooltip('distancia:Q',format='.3f')]).properties(height=140)
     comparison = alt.Chart(alt.NamedData(name='comparacion')).mark_point(filled=True,size=80).encode(
         y=alt.Y('rasgo:N',sort=list(LABELS.values()),title=None),x=alt.X('z:Q',title='Desvíos respecto de la superficie',scale=alt.Scale(zero=False)),
-        color=alt.Color('serie:N',scale=alt.Scale(domain=['Tu perfil','Centro asignado'],range=['#243D39','#899B93']),legend=alt.Legend(orient='bottom',title=None)),
-        shape=alt.Shape('serie:N',scale=alt.Scale(domain=['Tu perfil','Centro asignado'],range=['square','circle']),legend=alt.Legend(orient='bottom',title=None)),tooltip=['rasgo:N','serie:N',alt.Tooltip('z:Q',format='+.2f')]).properties(height=260)
+        color=alt.Color('marca:N',scale=alt.Scale(domain=[YOU]+ORDER,range=['#1F2421']+COLORS),legend=alt.Legend(orient='bottom',title=None)),
+        shape=alt.Shape('marca:N',scale=alt.Scale(domain=[YOU]+ORDER,range=['diamond']+SHAPES),legend=alt.Legend(orient='bottom',title=None)),tooltip=['rasgo:N','serie:N',alt.Tooltip('z:Q',format='+.2f')]).properties(height=260)
     result={'calidad':quality_chart,'relacion':(relation+regression).properties(height=380),'grupos':pca.properties(height=350),
             'explorar':explore.properties(height=440),'centros':centers_chart,'distancias':distances,'comparacion':comparison}
     return {name:finish(chart.properties(width='container')) for name,chart in result.items()}
@@ -321,7 +325,8 @@ def predictive_charts(report):
     diag=alt.Chart(pd.DataFrame({'x':[0,1],'y':[0,1]})).mark_line(color='#A8B3AC').encode(x='x:Q',y='y:Q')
     weights=alt.Chart(pd.DataFrame(report['coefficients'])).encode(
         y=alt.Y('variable:N',title=None,sort=[row['variable'] for row in report['coefficients']]),
-        color=alt.Color('bloque:N',title=None,scale=alt.Scale(domain=['Ranking','Estilos'],range=['#243D39','#899B93']),legend=alt.Legend(orient='bottom')))
+        color=alt.value('#294B40'),
+        opacity=alt.Opacity('bloque:O',title=None,sort=['Ranking','Estilos'],scale=alt.Scale(domain=['Ranking','Estilos'],range=[1,.45]),legend=alt.Legend(orient='bottom')))
     weight_bars=weights.mark_bar(size=14).encode(x=alt.X('coef:Q',title='Coeficiente: a la derecha favorece al primero del par',scale=alt.Scale(domain=[-.6,.6])),
         tooltip=['variable:N',alt.Tooltip('coef:Q',format='+.3f',title='Coeficiente')])
     win=alt.Chart(alt.NamedData(name='ganador')).mark_bar(color='#294B40').encode(
@@ -335,7 +340,7 @@ def predictive_charts(report):
         y=alt.Y('rasgo:N',title=None,sort=list(LABELS.values())),
         x=alt.X('z:Q',title='Desvíos respecto de la superficie · referencia del modelo',scale=alt.Scale(zero=False)),
         color=alt.Color('lado:N',title='Jugador',scale=SIDES,legend=alt.Legend(orient='bottom')),
-        shape=alt.Shape('lado:N',title='Jugador',scale=alt.Scale(domain=['A','B'],range=['circle','square']),legend=alt.Legend(orient='bottom')),tooltip=['jugador:N','rasgo:N',alt.Tooltip('z:Q',format='+.2f'),alt.Tooltip('tasa:Q',format='.1%')])
+        shape=alt.Shape('lado:N',title='Jugador',scale=SIDE_SHAPES,legend=alt.Legend(orient='bottom')),tooltip=['jugador:N','rasgo:N',alt.Tooltip('z:Q',format='+.2f'),alt.Tooltip('tasa:Q',format='.1%')])
     return {n:finish(c.properties(width='container',height=h))
             for n,c,h in [('victorias',midpoint+interval+dots,270),('rendimiento',bar+labels,190),('coeficientes',weight_bars,340),('calibracion',diag+calibration,260),('ganador',win,110),('enfrentamiento',duel,190),('rasgos-enfrentamiento',duel_profiles,290)]}
 
@@ -355,6 +360,11 @@ def main():
     for file in (ROOT/'web').iterdir():
         if file.is_file(): shutil.copy2(file,dist/file.name)
         elif file.is_dir(): shutil.copytree(file,dist/file.name,dirs_exist_ok=True)
+    # Versión por contenido en CSS y JS: si un archivo cambia, el navegador no usa la copia vieja.
+    page=(dist/'index.html').read_text(encoding='utf-8')
+    for asset in sorted((ROOT/'web').glob('*.css'))+sorted((ROOT/'web').glob('*.js')):
+        page=re.sub(rf'(href|src)="{re.escape(asset.name)}"',lambda m:f'{m.group(1)}="{asset.name}?v={sha(asset)[:8]}"',page)
+    (dist/'index.html').write_text(page,encoding='utf-8')
     write_json(dist/'datos.json',{'profiles':json.loads(df.to_json(orient='records',double_precision=15)), 'model':model,'stats':stats})
     chart_dir=dist/'charts'; chart_dir.mkdir(exist_ok=True)
     for name,spec in charts(df,quality,stats).items(): write_json(chart_dir/f'{name}.json',spec)
