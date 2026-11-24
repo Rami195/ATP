@@ -264,6 +264,20 @@ html.anim .hero-art{animation:rise 1s .2s cubic-bezier(.2,.7,.2,1) both}
 .k-table{max-width:520px}
 .k-table td:not(:first-child),.k-table th:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
 .k-table tr.chosen td{font-weight:800;background:color-mix(in srgb,var(--ball) 35%,#fff)}
+.style-table{min-width:520px}
+.style-table td,.style-table th:not(:first-child){text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.style-table tbody th{background:#fff;color:var(--ink);font-weight:600;text-align:left}
+.style-table td{background:#fff}
+.style-caption{margin-bottom:26px}
+.style-table,.style-legend{--above:#2F7FC1;--below:#D64535}
+.style-table td.pos{background:color-mix(in srgb,var(--above) var(--tint),#fff)}.style-table td.neg{background:color-mix(in srgb,var(--below) var(--tint),#fff)}
+.style-legend{display:flex;align-items:center;flex-wrap:wrap;gap:8px 14px;margin:-6px 0 0;font-size:12px;color:var(--muted)}
+.style-legend .legend-side{font-weight:700}.style-legend .legend-side.neg{color:#A8362B}.style-legend .legend-side.pos{color:#25639B}
+.style-legend .legend-scale{flex:1 1 180px;max-width:300px}
+.style-legend .legend-bar{height:12px;border-radius:999px;background:linear-gradient(90deg,color-mix(in srgb,var(--below) 48%,#fff),#fff 50%,color-mix(in srgb,var(--above) 48%,#fff));box-shadow:0 0 0 1px var(--line)}
+.style-legend .legend-ticks{display:flex;justify-content:space-between;margin-top:3px;font-variant-numeric:tabular-nums}
+.style-table td.strong{font-weight:800}
+.style-table .glyph.power{color:#E69F00}.style-table .glyph.return{color:#56B4E9}.style-table .glyph.fragile{color:#2bd19f}
 .group-step .chart-box{margin-top:16px}
 .group-step .style-notes{margin-top:18px}
 /* ---------- 02 · Botón «Pintar por altura» y la respuesta debajo del gráfico ---------- */
@@ -292,3 +306,60 @@ html.anim .hero-art{animation:rise 1s .2s cubic-bezier(.2,.7,.2,1) both}
 .wx-steps .decide-table{margin-top:10px}
 .wx-steps .decide-table td:not(:first-child),.wx-steps .decide-table th:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
 .wx-steps tfoot th{border-top:2px solid var(--ink)}
+/* Sección 05: partición por año y tarjetas de resultado. */
+.timeline{display:flex;gap:6px;margin:16px 0 0;max-width:900px}
+.timeline>div{display:flex;flex-direction:column;gap:2px;padding:14px 16px;border-radius:14px;color:#fff;min-width:0}
+.timeline strong{font-family:var(--display);font-size:18px}.timeline span{font-size:13px;font-variant-numeric:tabular-nums}.timeline small{font-size:12px;opacity:.85}
+.timeline .tl-train{flex:19 1 0;background:#294B40}.timeline .tl-val{flex:6 1 0;background:#5F7F72}.timeline .tl-test{flex:6 1 0;background:var(--own)}
+@media (max-width:640px){.timeline{flex-direction:column}.timeline>div{flex:none}}
+.result-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:18px;margin:20px 0 0}
+.result-cards article{background:#fff;border-radius:20px;padding:20px 22px;box-shadow:0 12px 32px rgba(20,48,42,.1);border-top:6px solid #82948C}
+.result-cards article.with-styles{border-top-color:var(--own)}
+.result-cards .result-label{margin:0;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.result-cards h3{font-family:var(--display);font-size:34px;margin:6px 0 2px;font-variant-numeric:tabular-nums}
+.result-cards h3+p{margin:0;font-size:13px;color:var(--muted)}
+/* Explorador: botones de k y mayores exponentes. */
+.k-bar{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 24px;margin:0 0 16px}
+.k-label{margin:0 0 8px;font-size:13px;font-weight:700}
+.k-buttons{display:flex;flex-wrap:wrap;gap:8px}
+.k-button{min-width:46px;height:42px;border-radius:999px;border:1.5px solid var(--own);background:#fff;color:var(--ink);font:inherit;font-weight:800;font-size:16px;cursor:pointer}
+.k-button:hover{background:var(--own-soft)}
+.k-button.on{background:var(--own);color:#fff}
+.k-button:focus-visible{outline:3px solid var(--ball);outline-offset:2px}
+.k-note{flex:1 1 260px;margin:0 0 8px;font-size:13px;color:var(--muted)}
+.leaders-title{font-family:var(--display);font-size:24px;letter-spacing:-.5px;margin:34px 0 0}
+.leaders-caption{margin-top:6px}
+.leaders{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;margin:16px 0 26px}
+.leaders article{background:#fff;border-radius:18px;padding:16px 18px;box-shadow:0 10px 26px rgba(20,48,42,.08);border-top:6px solid var(--gc)}
+.leaders .leader-group{margin:0;font-weight:800;line-height:1.35}
+.leaders .leader-group span{color:var(--gc)}
+.leaders .leader-count{margin:4px 0 8px;font-size:12px;color:var(--muted)}
+.leaders ol{margin:0;padding-left:20px}
+.leaders li{margin:3px 0}
+.leader-name{display:block;background:none;border:0;padding:2px 0;font:inherit;font-weight:650;color:var(--ink);text-align:left;cursor:pointer;text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--gc) 70%,transparent);text-underline-offset:3px}
+.leader-name small{display:block;font-weight:400;font-size:12px;color:var(--muted);text-decoration:none}
+.leader-name:hover{color:var(--own)}
+
+/* «¿A qué estilo se parece?»: los 5 jugadores más parecidos, su comparación y el mapa PCA. */
+#model-form label small{display:block;font-size:11px;color:var(--muted);margin-top:3px}
+.similar{margin-top:34px;background:white;border-radius:22px;box-shadow:0 14px 40px rgba(20,48,42,.12);border-top:6px solid var(--own);padding:26px 28px 18px}
+.similar-head h3{font-size:24px;line-height:1.2;margin:4px 0 8px}
+.similar-head p:not(.eyebrow){font-size:14px;color:var(--muted);max-width:820px;margin:0}
+.similar-layout{display:grid;grid-template-columns:minmax(260px,.8fr) 1.2fr;gap:30px;margin-top:22px;align-items:start}
+.similar-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.similar-item{width:100%;display:grid;grid-template-columns:30px 1fr auto;align-items:center;gap:12px;text-align:left;font:inherit;color:var(--ink);background:var(--paper);border:2px solid transparent;border-radius:16px;padding:12px 14px;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s}
+.similar-item:hover{transform:translateX(4px);border-color:var(--line)}
+.similar-item[aria-pressed="true"]{border-color:var(--ink);background:white;box-shadow:0 8px 22px rgba(20,48,42,.12)}
+.similar-rank{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:white;font-weight:700;font-size:13px}
+.similar-who strong{display:block;font-size:15px;line-height:1.25}
+.similar-who small{display:block;font-size:12px;color:var(--muted)}
+.style-mark{font-size:12px}
+.similar-dist{font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;background:var(--own-soft);border-radius:999px;padding:3px 10px}
+.similar-dist:before{content:'d ';font-weight:400;font-size:11px;color:var(--muted)}
+.similar-detail h4{font-size:19px;margin:4px 0 6px}
+.similar-detail>p:not(.eyebrow){font-size:13px;margin:0 0 10px}
+.similar-table{font-size:12px;width:100%;margin:10px 0 0}
+.similar-table td,.similar-table th{padding:6px 8px}
+.similar-table td:not(:first-child),.similar-table th:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
+.similar-map{margin-top:26px;border-top:1px dashed var(--line);padding-top:18px}
+@media(max-width:850px){.similar{padding:20px 14px}.similar-layout{grid-template-columns:1fr;gap:22px}}
