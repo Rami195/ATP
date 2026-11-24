@@ -42,7 +42,15 @@ HYPOTHESES = {'H1': ('Con menos de 20 partidos, los valores son más extremos', 
               'H6': ('Los que mejor devuelven juegan partidos más largos', 'r')}
 STATES = {'confirmada': 'Se sostuvo', 'inconclusa': 'Inconclusa', 'refutada': 'No se sostuvo'}
 CHART_COLUMNS = ['clave', 'nombre', 'superficie', 'superficie_nombre', 'estilo', 'partidos', 'winrate',
-                 'silhouette', 'PC1', 'PC2', 'tasa_aces_z', 'puntos_ganados_resto_z']
+                 'silhouette', 'PC1', 'PC2', 'tasa_aces_z', 'puntos_ganados_resto_z', 'altura', 'rango_altura',
+                 'tasa_aces', 'puntos_ganados_resto']
+# Rangos de altura del botón «Pintar por altura» (sección 02). Los cortes siguen los cuartiles
+# de los jugadores con perfil (180, 185 y 191 cm); la escala va del rojo (bajos) al azul oscuro (altos),
+# con los tonos suaves cerca de la mediana. Rojo–azul se distingue también con daltonismo rojo–verde.
+HEIGHT_BINS = [0, 179.5, 184.5, 190.5, 300]
+HEIGHT_BANDS = ['Menos de 180 cm', '180 a 184 cm', '185 a 190 cm', '191 cm o más']
+HEIGHT_COLORS = ['#C0392B', '#F08A6E', '#6FA8D6', '#1F4E8C']
+NO_HEIGHT, NO_HEIGHT_COLOR = 'Sin dato de altura', '#B9C6BB'
 LABELS = {'tasa_aces': 'Aces', 'tasa_dobles_faltas': 'Dobles faltas',
           'primer_saque_dentro': 'Primer saque dentro', 'efectividad_segundo': 'Segundo saque ganado',
           'bp_salvados': 'Break points salvados', 'puntos_ganados_resto': 'Puntos ganados al resto',
@@ -88,6 +96,7 @@ def long_profiles(players):
     blocks = []
     for surface in SUPS:
         block = pd.DataFrame({'id': players['id-jugador'], 'nombre': players['nombre-jugador'],
+                              'altura': players['altura-cm'],
                               'superficie': surface, 'partidos': players[f'partidos-{surface}'],
                               'winrate': players[f'tasa-victorias-{surface}'],
                               'cobertura_saque': players[f'cobertura-saque-{surface}'],
@@ -229,6 +238,12 @@ def prepare(jugadores, config_path, reference_path):
     df['distancia'] = distances.min(axis=1)
     df['superficie_nombre'] = df.superficie.map(SUP_LABELS)
     df['clave'] = df.id + '|' + df.superficie
+    # La altura no entra a los estilos (H4): sólo se usa para pintar el gráfico de la sección 02.
+    df['rango_altura'] = pd.cut(df.altura, bins=HEIGHT_BINS, labels=HEIGHT_BANDS).astype(object).where(df.altura.notna(), NO_HEIGHT)
+    tall = df[df.altura.notna()]
+    height = {'n': len(tall), 'aces': float(tall.altura.corr(tall.tasa_aces_z)), 'resto': float(tall.altura.corr(tall.puntos_ganados_resto_z)),
+              'bands': [{'rango': b, 'color': c, 'n': int(df.rango_altura.eq(b).sum())}
+                        for b, c in zip(HEIGHT_BANDS+[NO_HEIGHT], HEIGHT_COLORS+[NO_HEIGHT_COLOR]) if df.rango_altura.eq(b).any()]}
     summary = []
     for s in SUPS:
         subset = all_profiles[all_profiles.superficie.eq(s)]
@@ -241,13 +256,21 @@ def prepare(jugadores, config_path, reference_path):
              'ranges': {s: {c: [float(df.loc[df.superficie.eq(s),c].min()),float(df.loc[df.superficie.eq(s),c].max())] for c in cols} for s in SUPS},
              'distance95': float(np.quantile(distances.min(axis=1), .95)),
              'pca_mean': pca.mean_.tolist(), 'pca_components': pca.components_[:2].tolist()}
-    stats = {'n': len(df), 'players': int(df.id.nunique()), 'silver_players': len(players),
+    # El recorrido de la sección 01, desde la descarga del DAG hasta los perfiles.
+    pipeline = json.loads((ROOT/'inputs/embudo_pipeline.json').read_text(encoding='utf-8'))
+    path = {'source_matches': pipeline['bronce'], 'duplicate_matches': pipeline['bronce']-pipeline['consolidado'],
+            'unique_matches': pipeline['consolidado'], 'surface_matches': pipeline['superficies'], 'carpet_matches': pipeline['carpet'],
+            'no_surface_matches': pipeline['sin_superficie'], 'source_players': pipeline['jugadores_en_partidos'],
+            'enough_matches_profiles': int(enough_matches(all_profiles, config).sum())}
+    stats = {**path, 'n': len(df), 'players': int(df.id.nunique()), 'silver_players': len(players),
              'candidate_profiles': len(all_profiles), 'played_profiles': int(all_profiles.partidos.gt(0).sum()),
              'funnel': funnel_steps(players, all_profiles, config, len(df)), 'hypotheses': hypotheses(),
              'correlation_raw': float(df.tasa_aces.corr(df.puntos_ganados_resto)), 'silhouette': float(df.silhouette.mean()),
              'negative': float(df.silhouette.lt(0).mean()), 'below025': float(df.silhouette.lt(.25).mean()),
              'correlation': float(np.corrcoef(z[:,0],z[:,5])[0,1]),
-             'pca': pca.explained_variance_ratio_.tolist(),
+             'pca': pca.explained_variance_ratio_.tolist(), 'height': height,
+             # Sección «Cómo armamos los grupos»: el barrido de k que se hizo en la Entrega 3.
+             'k_selection': json.loads((ROOT/'inputs/eleccion_k.json').read_text(encoding='utf-8')),
              'counts': {k:int(v) for k,v in df.estilo.value_counts().items()},
              'surface_counts': {k:int(v) for k,v in df.superficie.value_counts().items()},
              'verified_predictions': len(comparison), 'source_differences':len(audit),
@@ -268,14 +291,38 @@ def charts(df, quality, stats):
         x=alt.X('perfiles:Q',title='Perfiles candidatos (jugador × superficie)',scale=alt.Scale(zero=True)),
         color=alt.Color('estado:N',scale=alt.Scale(domain=QUALITY,range=['#243D39','#B9C6BB','#E6EAE3']),legend=alt.Legend(orient='bottom',title=None)),
         order=alt.Order('orden:O',sort='ascending'), tooltip=['superficie:N','estado:N','perfiles:Q']).properties(height=180)
-    relation = alt.Chart(visible).mark_circle(size=28,opacity=.4,color='#526C64').encode(
-        x=alt.X('tasa_aces_z:Q',title='Aces · desvíos respecto de su superficie',scale=alt.Scale(zero=False)),
-        y=alt.Y('puntos_ganados_resto_z:Q',title='Puntos al resto · desvíos',scale=alt.Scale(zero=False)),tooltip=tip)
-    regression = relation.transform_regression('tasa_aces_z','puntos_ganados_resto_z').mark_line(color='#243D39',strokeWidth=2)
-    pca = alt.Chart(visible).mark_point(filled=True,size=37,opacity=.6).encode(
-        x=alt.X('PC1:Q',title=f"PC1 · {percent(stats['pca'][0])} de la variación",scale=alt.Scale(domain=[float(np.floor(df.PC1.min())),float(np.ceil(df.PC1.max()))])),
-        y=alt.Y('PC2:Q',title=f"PC2 · {percent(stats['pca'][1])} de la variación",scale=alt.Scale(domain=[float(np.floor(df.PC2.min())),float(np.ceil(df.PC2.max()))])),
-        color=color, shape=shape, tooltip=tip)
+    # «Pintar por altura»: el botón de la página cambia este parámetro. Apagado, todos los puntos van en gris.
+    paint = alt.param(name='pintarAltura', value=False)
+    height_scale = alt.Scale(domain=HEIGHT_BANDS+[NO_HEIGHT], range=HEIGHT_COLORS+[NO_HEIGHT_COLOR])
+    # En la sección 02 todavía no se habló de estilos: el tooltip muestra sólo lo que se ve, con las tasas reales.
+    relation_tip = [alt.Tooltip('nombre:N',title='Jugador'), alt.Tooltip('superficie_nombre:N',title='Superficie'),
+                    alt.Tooltip('altura:Q',format='.0f',title='Altura (cm)'), alt.Tooltip('partidos:Q',format='.0f',title='Partidos'),
+                    alt.Tooltip('tasa_aces:Q',format='.1%',title='Aces'), alt.Tooltip('puntos_ganados_resto:Q',format='.1%',title='Puntos ganados al resto')]
+    relation = alt.Chart(visible).mark_circle(size=28).encode(
+        x=alt.X('tasa_aces_z:Q',title='Aces (0 = promedio de su superficie)',scale=alt.Scale(zero=False)),
+        y=alt.Y('puntos_ganados_resto_z:Q',title='Puntos ganados al resto (0 = promedio de su superficie)',scale=alt.Scale(zero=False)),
+        color=alt.condition('pintarAltura', alt.Color('rango_altura:N', scale=height_scale, legend=None), alt.value('#526C64')),
+        opacity=alt.condition('pintarAltura', alt.value(.75), alt.value(.4)),
+        tooltip=relation_tip)
+    regression = alt.Chart(visible).transform_regression('tasa_aces_z','puntos_ganados_resto_z').mark_line(color='#243D39',strokeWidth=2).encode(
+        x='tasa_aces_z:Q', y='puntos_ganados_resto_z:Q')
+    # El r al final de la recta y, en las esquinas vacías, hacia dónde es «más».
+    slope, intercept = np.polyfit(df.tasa_aces_z, df.puntos_ganados_resto_z, 1)
+    x_end = float(df.tasa_aces_z.max())
+    r_label = alt.Chart(pd.DataFrame([{'x': x_end, 'y': float(slope*x_end+intercept), 'texto': 'r = ' + f"{stats['correlation']:.2f}".replace('.', ',').replace('-', '−')}])).mark_text(
+        align='right', baseline='bottom', dx=-4, dy=-10, fontSize=13, fontWeight='bold', color='#243D39').encode(x='x:Q', y='y:Q', text='texto:N')
+    hint = dict(fontSize=12, fontWeight='bold', color='#7A8B84')
+    more_aces = alt.Chart(pd.DataFrame([{'texto': 'más aces →'}])).mark_text(align='right', baseline='top', **hint).encode(
+        x=alt.value('width'), y=alt.value(6), text='texto:N')
+    better_return = alt.Chart(pd.DataFrame([{'texto': '↑ mejor devolución'}])).mark_text(align='left', baseline='bottom', **hint).encode(
+        x=alt.value(8), y=alt.value('height'), text='texto:N')
+    # PC1 junta aces y break points salvados contra resto; PC2, la solidez del segundo saque contra las dobles faltas.
+    pc_x = alt.X('PC1:Q',title=f"PC1 · {percent(stats['pca'][0])} de la variación · ← mejor resto · más aces →",scale=alt.Scale(domain=[float(np.floor(df.PC1.min())),float(np.ceil(df.PC1.max()))]))
+    pc_y = alt.Y('PC2:Q',title=f"PC2 · {percent(stats['pca'][1])} de la variación · ↑ saque más sólido",scale=alt.Scale(domain=[float(np.floor(df.PC2.min())),float(np.ceil(df.PC2.max()))]))
+    pca = alt.Chart(visible).mark_point(filled=True,size=37,opacity=.6).encode(x=pc_x, y=pc_y, color=color, shape=shape, tooltip=tip)
+    # El mismo mapa antes de agrupar: todavía no hay estilos, todos los puntos van en gris.
+    pca_plain = alt.Chart(visible).mark_circle(size=28,opacity=.45,color='#526C64').encode(x=pc_x, y=pc_y,
+        tooltip=[alt.Tooltip('nombre:N',title='Jugador'), alt.Tooltip('superficie_nombre:N',title='Superficie'), alt.Tooltip('partidos:Q',format='.0f',title='Partidos')])
     surface = alt.param(name='superficie',value='Todas')
     style = alt.param(name='estiloFiltro',value='Todos')
     minimum = alt.param(name='minPartidos',value=20)
@@ -297,7 +344,7 @@ def charts(df, quality, stats):
         y=alt.Y('rasgo:N',sort=list(LABELS.values()),title=None),x=alt.X('z:Q',title='Desvíos respecto de la superficie',scale=alt.Scale(zero=False)),
         color=alt.Color('marca:N',scale=alt.Scale(domain=[YOU]+ORDER,range=['#1F2421']+COLORS),legend=alt.Legend(orient='bottom',title=None)),
         shape=alt.Shape('marca:N',scale=alt.Scale(domain=[YOU]+ORDER,range=['diamond']+SHAPES),legend=alt.Legend(orient='bottom',title=None)),tooltip=['rasgo:N','serie:N',alt.Tooltip('z:Q',format='+.2f')]).properties(height=260)
-    result={'calidad':quality_chart,'relacion':(relation+regression).properties(height=380),'grupos':pca.properties(height=350),
+    result={'calidad':quality_chart,'relacion':alt.layer(relation,regression,r_label,more_aces,better_return).add_params(paint).properties(height=380),'grupos':pca.properties(height=350),'mapa':pca_plain.properties(height=350),
             'explorar':explore.properties(height=440),'centros':centers_chart,'distancias':distances,'comparacion':comparison}
     return {name:finish(chart.properties(width='container')) for name,chart in result.items()}
 

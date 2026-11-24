@@ -1,0 +1,12 @@
+{
+  "fuente": "Entrega 3, Entrega3_ATP_Estilos_de_juego.ipynb, Parte 2 (barrido de k y estabilidad con 30 remuestreos, semilla 42)",
+  "elegido": 3,
+  "filas": [
+    {"k": 2, "silhouette": 0.194, "ari": 0.876, "grupo_mas_chico": 0.360},
+    {"k": 3, "silhouette": 0.171, "ari": 0.866, "grupo_mas_chico": 0.266},
+    {"k": 4, "silhouette": 0.154, "ari": 0.675, "grupo_mas_chico": 0.173},
+    {"k": 5, "silhouette": 0.146, "ari": 0.628, "grupo_mas_chico": 0.118},
+    {"k": 6, "silhouette": 0.152, "ari": 0.590, "grupo_mas_chico": 0.065},
+    {"k": 7, "silhouette": 0.138, "ari": 0.495, "grupo_mas_chico": 0.067}
+  ]
+}

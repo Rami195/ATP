@@ -71,7 +71,8 @@ assert.equal(example.styleFavorite,null);assert.equal(example.rankingFavorite,0)
 assert.throws(()=>compareMatchup(pred.model,nadal,nadal,'clay',3));
 assert.throws(()=>compareMatchup(pred.model,nadal,federer,'grass',3));
 const html=fs.readFileSync('dist/index.html','utf8');
-assert.equal((html.match(/class="story"/g)||[]).length,3);
+// Historia: 01 datos, 02 primera hipótesis, 03 cómo armamos los grupos, 04 el modelo.
+assert.equal((html.match(/class="story"/g)||[]).length,4);
 assert.ok(!/<details[^>]*\bopen\b/.test(html));
 for(const file of ['app.js','modelo.js','style.css','prediccion.css','vendor/vega.min.js','vendor/vega-lite.min.js','vendor/vega-embed.min.js'])assert.ok(fs.statSync('dist/'+file).size>0);
-console.log(JSON.stringify({descriptive_assignments:data.profiles.length,test_matches:pred.matches.length,max_probability_error:maxError,catalog_profiles:catalog.profiles.length,matchup_fixtures:catalog.fixtures.length,nadal_federer_2019:example,favorite_changes:flip,invalid_inputs:'rejected',swap_symmetry:'passed',rare_profile:'warning',story_sections:3}));
+console.log(JSON.stringify({descriptive_assignments:data.profiles.length,test_matches:pred.matches.length,max_probability_error:maxError,catalog_profiles:catalog.profiles.length,matchup_fixtures:catalog.fixtures.length,nadal_federer_2019:example,favorite_changes:flip,invalid_inputs:'rejected',swap_symmetry:'passed',rare_profile:'warning',story_sections:4}));
