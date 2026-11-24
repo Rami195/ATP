@@ -43,7 +43,7 @@ HYPOTHESES = {'H1': ('Con menos de 20 partidos, los valores son más extremos', 
 STATES = {'confirmada': 'Se sostuvo', 'inconclusa': 'Inconclusa', 'refutada': 'No se sostuvo'}
 CHART_COLUMNS = ['clave', 'nombre', 'superficie', 'superficie_nombre', 'estilo', 'partidos', 'winrate',
                  'silhouette', 'PC1', 'PC2', 'tasa_aces_z', 'puntos_ganados_resto_z', 'altura', 'rango_altura',
-                 'tasa_aces', 'puntos_ganados_resto']
+                 'tasa_aces', 'puntos_ganados_resto', 'g2', 'g3', 'g4', 'g5', 'g6', 'g7']
 # Rangos de altura del botón «Pintar por altura» (sección 02). Los cortes siguen los cuartiles
 # de los jugadores con perfil (180, 185 y 191 cm); la escala va del rojo (bajos) al azul oscuro (altos),
 # con los tonos suaves cerca de la mediana. Rojo–azul se distingue también con daltonismo rojo–verde.
@@ -51,6 +51,16 @@ HEIGHT_BINS = [0, 179.5, 184.5, 190.5, 300]
 HEIGHT_BANDS = ['Menos de 180 cm', '180 a 184 cm', '185 a 190 cm', '191 cm o más']
 HEIGHT_COLORS = ['#C0392B', '#F08A6E', '#6FA8D6', '#1F4E8C']
 NO_HEIGHT, NO_HEIGHT_COLOR = 'Sin dato de altura', '#B9C6BB'
+# Explorador «Armá tus propios grupos»: K-means con otros k sobre las mismas siete tasas (k = 3 son los estilos de E3).
+K_OPTIONS = [2, 3, 4, 5, 6, 7]
+GROUP_COLORS = ['#E69F00', '#56B4E9', '#009E73', '#0072B2', '#D55E00', '#CC79A7', '#6B6B6B']
+GROUP_SHAPES = ['circle', 'square', 'triangle-up', 'diamond', 'cross', 'triangle-down', 'triangle-right']
+TRAIT_WORDS = {'tasa_aces': ('más aces', 'menos aces'), 'tasa_dobles_faltas': ('más dobles faltas', 'menos dobles faltas'),
+               'primer_saque_dentro': ('más primeros saques adentro', 'menos primeros saques adentro'),
+               'efectividad_segundo': ('segundo saque sólido', 'segundo saque flojo'),
+               'bp_salvados': ('salva más break points', 'salva menos break points'),
+               'puntos_ganados_resto': ('mejor devolución', 'peor devolución'),
+               'bp_convertidos': ('convierte más break points', 'convierte menos break points')}
 LABELS = {'tasa_aces': 'Aces', 'tasa_dobles_faltas': 'Dobles faltas',
           'primer_saque_dentro': 'Primer saque dentro', 'efectividad_segundo': 'Segundo saque ganado',
           'bp_salvados': 'Break points salvados', 'puntos_ganados_resto': 'Puntos ganados al resto',
@@ -197,6 +207,42 @@ def hypotheses():
             for key, (text, measure) in HYPOTHESES.items()]
 
 
+def group_name(center, cols, taken):
+    """Nombre legible de un grupo: sus dos rasgos más alejados del promedio (tres si el nombre ya existe)."""
+    order = sorted(range(len(cols)), key=lambda j: -abs(center[j]))
+    for n in (2, 3, 4):
+        words = [TRAIT_WORDS[cols[j]][0 if center[j] > 0 else 1] for j in order[:n]]
+        name = (', '.join(words[:-1]) + ' y ' + words[-1]).capitalize()
+        if name not in taken:
+            return name
+    return name
+
+
+def k_groups(df, z, cols):
+    """Para cada k, el grupo de cada perfil y la ficha de cada grupo (centro, tamaño, color y forma).
+    k = 3 usa los estilos de la Entrega 3; los otros k, KMeans(n_init=10, random_state=42) como en el barrido de E3."""
+    result = {}
+    for k in K_OPTIONS:
+        if k == 3:
+            labels = df.estilo.to_numpy()
+            ids = ORDER
+            names = {e: e for e in ORDER}
+            colors, shapes = dict(zip(ORDER, COLORS)), dict(zip(ORDER, SHAPES))
+        else:
+            raw = KMeans(n_clusters=k, n_init=10, random_state=42).fit_predict(z)
+            by_size = pd.Series(raw).value_counts().index.tolist()
+            ids = [f'k{k}-{i+1}' for i in range(k)]
+            labels = np.array([ids[by_size.index(r)] for r in raw])
+            names, taken = {}, set()
+            for g in ids:
+                names[g] = group_name(z[labels == g].mean(axis=0), cols, taken); taken.add(names[g])
+            colors, shapes = dict(zip(ids, GROUP_COLORS)), dict(zip(ids, GROUP_SHAPES))
+        df[f'g{k}'] = labels
+        result[str(k)] = [{'id': g, 'nombre': names[g], 'n': int((labels == g).sum()), 'color': colors[g], 'forma': shapes[g],
+                           'centro': [float(v) for v in z[labels == g].mean(axis=0)]} for g in ids]
+    return result
+
+
 def prepare(jugadores, config_path, reference_path):
     config = json.loads(config_path.read_text(encoding='utf-8'))
     cols = config['columnas']
@@ -238,6 +284,7 @@ def prepare(jugadores, config_path, reference_path):
     df['distancia'] = distances.min(axis=1)
     df['superficie_nombre'] = df.superficie.map(SUP_LABELS)
     df['clave'] = df.id + '|' + df.superficie
+    groups_by_k = k_groups(df, z, cols)
     # La altura no entra a los estilos (H4): sólo se usa para pintar el gráfico de la sección 02.
     df['rango_altura'] = pd.cut(df.altura, bins=HEIGHT_BINS, labels=HEIGHT_BANDS).astype(object).where(df.altura.notna(), NO_HEIGHT)
     tall = df[df.altura.notna()]
@@ -271,7 +318,10 @@ def prepare(jugadores, config_path, reference_path):
              'pca': pca.explained_variance_ratio_.tolist(), 'height': height,
              # Sección «Cómo armamos los grupos»: el barrido de k que se hizo en la Entrega 3.
              'k_selection': json.loads((ROOT/'inputs/eleccion_k.json').read_text(encoding='utf-8')),
+             'k_groups': groups_by_k,
              'counts': {k:int(v) for k,v in df.estilo.value_counts().items()},
+             # Tabla «jugador típico de cada estilo»: media de cada tasa estandarizada, por estilo.
+             'style_profile': [{'rasgo': LABELS[c], **{e: float(df.loc[df.estilo.eq(e), c+'_z'].mean()) for e in ORDER}} for c in LABELS],
              'surface_counts': {k:int(v) for k,v in df.superficie.value_counts().items()},
              'verified_predictions': len(comparison), 'source_differences':len(audit),
              'profiles_source_differences':int(changed.any(axis=1).sum())}
@@ -327,15 +377,25 @@ def charts(df, quality, stats):
     style = alt.param(name='estiloFiltro',value='Todos')
     minimum = alt.param(name='minPartidos',value=20)
     search = alt.param(name='busqueda',value='')
-    explore = pca.add_params(surface,style,minimum,search).transform_filter(
-        "(superficie === 'Todas' || datum.superficie === superficie) && (estiloFiltro === 'Todos' || datum.estilo === estiloFiltro) && datum.partidos >= minPartidos && indexof(lower(datum.nombre), lower(busqueda)) >= 0")
-    centroid_data=[]
-    for name, g in df.groupby('estilo'):
-        for col in LABELS:
-            centroid_data.append({'estilo':name,'rasgo':LABELS[col],'z':float(g[col+'_z'].mean())})
-    centers_chart=alt.Chart(pd.DataFrame(centroid_data)).mark_point(filled=True,size=90).encode(
-        y=alt.Y('rasgo:N',title=None,sort=list(LABELS.values())),x=alt.X('z:Q',title='Desvíos estándar respecto del promedio de su superficie (0 = promedio)',scale=alt.Scale(domain=[-1.5,1.5])),
-        color=color,shape=shape,tooltip=['estilo:N','rasgo:N',alt.Tooltip('z:Q',format='+.2f')]).properties(height=280)
+    k_param = alt.param(name='kGrupos', value=3)
+    all_groups = [g for k in K_OPTIONS for g in stats['k_groups'][str(k)]]
+    group_color = alt.Color('grupo:N', scale=alt.Scale(domain=[g['id'] for g in all_groups], range=[g['color'] for g in all_groups]), legend=None)
+    group_shape = alt.Shape('grupo:N', scale=alt.Scale(domain=[g['id'] for g in all_groups], range=[g['forma'] for g in all_groups]), legend=None)
+    group_names = {g['id']: g['nombre'] for g in all_groups}
+    explore_points = alt.Chart(visible).mark_point(filled=True,size=37,opacity=.6).encode(
+        x=pc_x, y=pc_y, color=group_color, shape=group_shape,
+        tooltip=[alt.Tooltip('nombre:N',title='Jugador'), alt.Tooltip('superficie_nombre:N',title='Superficie'), alt.Tooltip('grupo_nombre:N',title='Grupo'),
+                 alt.Tooltip('partidos:Q',format='.0f',title='Partidos'), alt.Tooltip('winrate:Q',format='.1%',title='Victorias')]
+    ).add_params(surface,style,minimum,search,k_param).transform_calculate(
+        grupo="datum['g' + kGrupos]", grupo_nombre=f"{json.dumps(group_names, ensure_ascii=False)}[datum['g' + kGrupos]]"
+    ).transform_filter(
+        "(superficie === 'Todas' || datum.superficie === superficie) && (estiloFiltro === 'Todos' || datum.grupo === estiloFiltro) && datum.partidos >= minPartidos && indexof(lower(datum.nombre), lower(busqueda)) >= 0")
+    leaders = alt.Chart(alt.NamedData(name='exponentes'))
+    leader_ring = leaders.mark_point(shape='circle',size=260,filled=False,strokeWidth=2.5,color='#1F2421').encode(
+        x=pc_x, y=pc_y, tooltip=[alt.Tooltip('nombre:N',title='Mayor exponente'), alt.Tooltip('superficie_nombre:N',title='Superficie'), alt.Tooltip('grupo_nombre:N',title='Grupo')])
+    leader_text = leaders.mark_text(align='left',dx=11,dy=-9,fontSize=12,fontWeight='bold',color='#1F2421',stroke='#FFFFFF',strokeWidth=3,strokeOpacity=.85).encode(x=pc_x, y=pc_y, text='etiqueta:N')
+    leader_text_fill = leaders.mark_text(align='left',dx=11,dy=-9,fontSize=12,fontWeight='bold',color='#1F2421').encode(x=pc_x, y=pc_y, text='etiqueta:N')
+    explore = alt.layer(explore_points, leader_ring, leader_text, leader_text_fill)
     # Datos cambiados desde JavaScript; la gramática de estos gráficos también es Altair.
     distances = alt.Chart(alt.NamedData(name='distancias')).mark_bar().encode(
         y=alt.Y('estilo:N',sort=ORDER,title=None),x=alt.X('distancia:Q',title='Distancia al centro (menor = más parecido)',scale=alt.Scale(zero=True)),color=style_color(),
@@ -344,8 +404,40 @@ def charts(df, quality, stats):
         y=alt.Y('rasgo:N',sort=list(LABELS.values()),title=None),x=alt.X('z:Q',title='Desvíos respecto de la superficie',scale=alt.Scale(zero=False)),
         color=alt.Color('marca:N',scale=alt.Scale(domain=[YOU]+ORDER,range=['#1F2421']+COLORS),legend=alt.Legend(orient='bottom',title=None)),
         shape=alt.Shape('marca:N',scale=alt.Scale(domain=[YOU]+ORDER,range=['diamond']+SHAPES),legend=alt.Legend(orient='bottom',title=None)),tooltip=['rasgo:N','serie:N',alt.Tooltip('z:Q',format='+.2f')]).properties(height=260)
+    # «Jugadores parecidos»: JavaScript busca los 5 perfiles más cercanos al perfil cargado y llena estos dos gráficos.
+    # Rasgo por rasgo: el perfil (rombo negro) contra el jugador elegido, con una línea que mide la diferencia.
+    pair = alt.Chart(alt.NamedData(name='rasgos_parecido'))
+    pair_y = alt.Y('rasgo:N',sort=list(LABELS.values()),title=None)
+    pair_gap = pair.mark_rule(color='#B9C6BB',strokeWidth=3).encode(y=pair_y,x=alt.X('z_min:Q'),x2='z_max:Q').transform_aggregate(
+        z_min='min(z)',z_max='max(z)',groupby=['rasgo'])
+    pair_tip = [alt.Tooltip('rasgo:N',title='Rasgo'),alt.Tooltip('serie:N',title='Perfil'),alt.Tooltip('tasa:Q',format='.1%',title='Tasa'),alt.Tooltip('z:Q',format='+.2f',title='Desvíos')]
+    pair_points = pair.mark_point(filled=True,size=110,opacity=1).encode(
+        y=pair_y,x=alt.X('z:Q',title='Desvíos respecto de la superficie (0 = promedio)',scale=alt.Scale(zero=False)),
+        color=alt.Color('marca:N',scale=alt.Scale(domain=[YOU]+ORDER,range=['#1F2421']+COLORS),legend=None),
+        shape=alt.Shape('marca:N',scale=alt.Scale(domain=[YOU]+ORDER,range=['diamond']+SHAPES),legend=None),tooltip=pair_tip)
+    similar_traits = alt.layer(pair_gap, pair_points).properties(height=250)
+    # El mapa PCA de la superficie elegida, con el perfil, sus 5 parecidos y el jugador elegido resaltado.
+    similar_surface = alt.param(name='supParecidos', value='cemento')
+    similar_base = alt.Chart(visible).mark_point(filled=True,size=30,opacity=.22).encode(
+        x=pc_x, y=pc_y, color=style_color(), shape=style_shape(),
+        tooltip=[alt.Tooltip('nombre:N',title='Jugador'), alt.Tooltip('estilo:N',title='Estilo'), alt.Tooltip('partidos:Q',format='.0f',title='Partidos')]
+    ).add_params(similar_surface).transform_filter('datum.superficie === supParecidos')
+    marked = alt.Chart(alt.NamedData(name='pca_parecidos'))
+    near_tip = [alt.Tooltip('etiqueta:N',title='Perfil'), alt.Tooltip('estilo:N',title='Estilo'), alt.Tooltip('distancia:Q',format='.2f',title='Distancia')]
+    link = marked.transform_filter("datum.tipo === 'Elegido'").mark_rule(color='#1F2421',strokeDash=[5,4],strokeWidth=1.5).encode(
+        x=pc_x, y=pc_y, x2=alt.X2('PC1_tu'), y2=alt.Y2('PC2_tu'))
+    near = marked.transform_filter("datum.tipo !== 'Tu perfil'").mark_point(filled=True,size=110,opacity=1,stroke='#1F2421',strokeWidth=1).encode(
+        x=pc_x, y=pc_y, color=style_color(), shape=style_shape(), tooltip=near_tip)
+    chosen_ring = marked.transform_filter("datum.tipo === 'Elegido'").mark_point(shape='circle',size=420,filled=False,strokeWidth=2.5,color='#1F2421').encode(x=pc_x, y=pc_y)
+    you_mark = marked.transform_filter("datum.tipo === 'Tu perfil'").mark_point(shape='diamond',filled=True,size=200,color='#1F2421',opacity=1).encode(
+        x=pc_x, y=pc_y, tooltip=[alt.Tooltip('etiqueta:N',title='Perfil')])
+    label_rows = marked.transform_filter("datum.tipo !== 'Parecido'")
+    labels_halo = label_rows.mark_text(align='left',dx=12,dy=-10,fontSize=12,fontWeight='bold',stroke='#FFFFFF',strokeWidth=3,strokeOpacity=.9).encode(x=pc_x, y=pc_y, text='etiqueta:N')
+    labels_fill = label_rows.mark_text(align='left',dx=12,dy=-10,fontSize=12,fontWeight='bold',color='#1F2421').encode(x=pc_x, y=pc_y, text='etiqueta:N')
+    similar_map = alt.layer(similar_base, link, near, chosen_ring, you_mark, labels_halo, labels_fill).properties(height=380)
     result={'calidad':quality_chart,'relacion':alt.layer(relation,regression,r_label,more_aces,better_return).add_params(paint).properties(height=380),'grupos':pca.properties(height=350),'mapa':pca_plain.properties(height=350),
-            'explorar':explore.properties(height=440),'centros':centers_chart,'distancias':distances,'comparacion':comparison}
+            'explorar':explore.properties(height=440),'distancias':distances,'comparacion':comparison,
+            'parecidos-rasgos':similar_traits,'parecidos-pca':similar_map}
     return {name:finish(chart.properties(width='container')) for name,chart in result.items()}
 
 
@@ -358,6 +450,25 @@ def predictive_charts(report):
     interval=base.mark_rule(strokeWidth=3).encode(x=alt.X('lower:Q',scale=winrate_scale,title='Proporción de victorias · test 2023–2025',axis=alt.Axis(format='%')),x2='upper:Q')
     dots=base.mark_point(filled=True,size=120,opacity=1).encode(x=alt.X('winrate:Q',scale=winrate_scale),shape=style_shape(legend),tooltip=[alt.Tooltip('condicion:N',title='Condición'),alt.Tooltip('estilo:N',title='Estilo'),alt.Tooltip('n:Q',format=',.0f',title='Participaciones'),alt.Tooltip('winrate:Q',format='.1%',title='Victorias'),alt.Tooltip('lower:Q',format='.1%',title='IC95 % inferior'),alt.Tooltip('upper:Q',format='.1%',title='IC95 % superior')])
     midpoint=alt.Chart(pd.DataFrame({'x':[.5]})).mark_rule(color='#82948C',strokeDash=[4,4]).encode(x=alt.X('x:Q',scale=winrate_scale))
+    # Sección 04 «¿Hay un estilo superior?»: primero cuánto llega cada estilo como favorito,
+    # después sus victorias separadas por esa condición. Barras desde cero y la mitad marcada.
+    half=alt.Chart(pd.DataFrame({'x':[.5]})).mark_rule(color='#82948C',strokeDash=[4,4]).encode(x='x:Q')
+    share=pd.DataFrame([{'estilo':e,'share':report['best_ranked_share'][e]} for e in ORDER])
+    share_bars=alt.Chart(share).mark_bar(size=26).encode(
+        y=alt.Y('estilo:N',title=None,sort=ORDER),x=alt.X('share:Q',title='Partidos en que llegó con mejor ranking que el rival',scale=alt.Scale(domain=[0,1]),axis=alt.Axis(format='%',values=[0,.25,.5,.75,1])),
+        color=style_color(),tooltip=[alt.Tooltip('estilo:N',title='Estilo'),alt.Tooltip('share:Q',format='.1%',title='Llega como favorito')])
+    share_labels=share_bars.mark_text(align='left',dx=8,color='#203B34',fontWeight='bold').encode(text=alt.Text('share:Q',format='.1%'),color=alt.value('#203B34'))
+    plain={'Llega como mejor rankeado':'Llega como favorito','Llega como peor rankeado':'Llega como no favorito'}
+    split=pd.DataFrame([r|{'situacion':plain[r['condicion']]} for r in report['association_rank'] if r['condicion'] in plain])
+    split_base=alt.Chart(split).encode(y=alt.Y('situacion:N',title=None,sort=list(plain.values())),yOffset=alt.YOffset('estilo:N',sort=ORDER))
+    split_bars=split_base.mark_bar(height=22).encode(
+        x=alt.X('winrate:Q',title='Partidos ganados · 2023–2025',scale=alt.Scale(domain=[0,1]),axis=alt.Axis(format='%',values=[0,.25,.5,.75,1])),
+        color=style_color(legend),tooltip=[alt.Tooltip('situacion:N',title='Situación'),alt.Tooltip('estilo:N',title='Estilo'),alt.Tooltip('n:Q',format=',.0f',title='Partidos'),alt.Tooltip('winrate:Q',format='.1%',title='Ganó')])
+    # El 66 % de la portada (restadores sólidos como favoritos) va en negrita.
+    portada="datum.estilo === 'Restadores sólidos' && datum.situacion === 'Llega como favorito'"
+    split_text=split_base.encode(x='winrate:Q',text=alt.Text('winrate:Q',format='.1%'))
+    split_labels=(split_text.mark_text(align='left',dx=8,color='#203B34').transform_filter('!('+portada+')')
+                  +split_text.mark_text(align='left',dx=8,color='#203B34',fontWeight='bold',fontSize=13).transform_filter(portada))
     short={'Gana el mejor rankeado':'Piso: gana el mejor rankeado','Ranking + contexto':'Ranking + contexto','Ranking + contexto + estilos':'Ranking + contexto + estilos'}
     comparison=pd.DataFrame([{'modelo':n,**report['metrics'][n]} for n in short])
     comparison['modelo_corto']=comparison.modelo.map(short)
@@ -389,7 +500,7 @@ def predictive_charts(report):
         color=alt.Color('lado:N',title='Jugador',scale=SIDES,legend=alt.Legend(orient='bottom')),
         shape=alt.Shape('lado:N',title='Jugador',scale=SIDE_SHAPES,legend=alt.Legend(orient='bottom')),tooltip=['jugador:N','rasgo:N',alt.Tooltip('z:Q',format='+.2f'),alt.Tooltip('tasa:Q',format='.1%')])
     return {n:finish(c.properties(width='container',height=h))
-            for n,c,h in [('victorias',midpoint+interval+dots,270),('rendimiento',bar+labels,190),('coeficientes',weight_bars,340),('calibracion',diag+calibration,260),('ganador',win,110),('enfrentamiento',duel,190),('rasgos-enfrentamiento',duel_profiles,290)]}
+            for n,c,h in [('favoritos',share_bars+share_labels+half,150),('superior',split_bars+split_labels+half,250),('victorias',midpoint+interval+dots,270),('rendimiento',bar+labels,190),('coeficientes',weight_bars,340),('calibracion',diag+calibration,260),('ganador',win,110),('enfrentamiento',duel,190),('rasgos-enfrentamiento',duel_profiles,290)]}
 
 
 def main():

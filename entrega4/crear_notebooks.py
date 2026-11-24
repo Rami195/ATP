@@ -231,7 +231,7 @@ Altair (`superficie`, `estiloFiltro`, `minPartidos`, `busqueda`) leídos por
 `transform_filter`. Los dominios permanecen fijos para no alterar comparaciones.
 El clic en un punto y el selector de perfil fijan el detalle, también con teclado.'''),
 code("alt.Chart.from_dict(specs['grupos']).properties(width=750)"),
-code("alt.Chart.from_dict(specs['centros']).properties(width=750)"),
+code("display(pd.DataFrame(stats['style_profile']).set_index('rasgo').round(2))"),
 md('''## 5. El simulador de enfrentamientos
 
 El usuario elige superficie, temporada y dos jugadores. La app toma del catálogo las

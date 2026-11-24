@@ -61,11 +61,52 @@ function text(id,value){if($(id))$(id).textContent=value;}
 function fillTable(id,rows){if(!$(id))return;$(id).replaceChildren(...rows.map(cells=>{const row=document.createElement('tr');for(const cell of cells){const td=document.createElement('td');td.textContent=cell;row.append(td);}return row;}));}
 function option(value,label){const o=document.createElement('option');o.value=value;o.textContent=label;return o;}
 function updateDataset(name,dataset,rows){return views[name].change(dataset,vega.changeset().remove(()=>true).insert(rows)).runAsync();}
+// Explorador: cantidad de grupos (k) y mayores exponentes. Los grupos de cada k vienen de build.py (stats.k_groups).
+let currentK=3;
+const SHAPE_GLYPH={circle:'●',square:'■','triangle-up':'▲',diamond:'◆',cross:'✚','triangle-down':'▼','triangle-right':'▶'};
+const SUP_SHORT={cemento:'cemento',clay:'polvo',grass:'césped'};
+const kGroups=()=>data.stats.k_groups[String(currentK)];
+function setupK(){
+  const box=$('k-buttons');box.replaceChildren();
+  for(const k of Object.keys(data.stats.k_groups).map(Number)){const b=document.createElement('button');b.type='button';b.className='k-button';b.setAttribute('role','radio');b.dataset.k=k;b.textContent=k;b.addEventListener('click',()=>setK(k));box.append(b);}
+  setK(3,false);
+}
+function setK(k,refresh=true){
+  currentK=k;
+  document.querySelectorAll('.k-button').forEach(b=>{const on=+b.dataset.k===k;b.classList.toggle('on',on);b.setAttribute('aria-checked',on);});
+  const row=data.stats.k_selection.filas.find(f=>f.k===k);
+  text('k-note',(k===data.stats.k_selection.elegido?'k = '+k+' es el que elegimos: son los tres estilos de la página.':'k = '+k+': grupos armados con las mismas siete tasas.')+(row?' Separación (silhouette) '+fmt(row.silhouette,2)+' · estabilidad '+fmt(row.ari,2)+'.':''));
+  const sel=$('style'),old=sel.value;sel.replaceChildren(option('Todos','Todos los grupos'),...kGroups().map(g=>option(g.id,SHAPE_GLYPH[g.forma]+' '+g.nombre)));sel.value=kGroups().some(g=>g.id===old)?old:'Todos';
+  if(refresh)filterProfiles();
+}
+function updateLeaders(){
+  const surface=$('surface').value,min=+$('minimum').value,cols=data.model.columns,key='g'+currentK;
+  const base=data.profiles.filter(p=>(surface==='Todas'||p.superficie===surface)&&p.partidos>=min);
+  // Mayor exponente = el más extremo en la dirección que define al grupo: proyección de sus tasas sobre el centro.
+  // Sólo perfiles con 100 partidos o más: con pocos partidos los valores salen extremos por azar (H1).
+  const LEADER_MIN=100,pool=base.filter(p=>p.partidos>=LEADER_MIN);
+  const push=(p,c)=>{const n=Math.hypot(...c);return cols.reduce((t,col,j)=>t+p[col+'_z']*c[j]/n,0);};
+  const top=kGroups().map(g=>({g,best:pool.filter(p=>p[key]===g.id).map(p=>({p,d:-push(p,g.centro)})).sort((a,b)=>a.d-b.d).map(x=>x.p).filter((p,i,all)=>all.findIndex(q=>q.id===p.id)===i).slice(0,3)}));
+  const box=$('leaders');box.replaceChildren();
+  for(const {g,best} of top){
+    const card=document.createElement('article');card.style.setProperty('--gc',g.color);
+    const head=document.createElement('p');head.className='leader-group';const glyph=document.createElement('span');glyph.textContent=SHAPE_GLYPH[g.forma];glyph.setAttribute('aria-hidden','true');head.append(glyph,' '+g.nombre);
+    const count=document.createElement('p');count.className='leader-count';count.textContent=fmt(base.filter(p=>p[key]===g.id).length)+' perfiles con estos filtros';
+    const list=document.createElement('ol');
+    for(const p of best){const li=document.createElement('li');const b=document.createElement('button');b.type='button';b.className='leader-name';b.textContent=p.nombre;const sm=document.createElement('small');sm.textContent=p.superficie_nombre;b.append(sm);b.addEventListener('click',()=>pickProfile(p.clave));li.append(b);list.append(li);}
+    if(!best.length){const li=document.createElement('li');li.textContent='Ningún perfil con estos filtros.';list.append(li);}
+    card.append(head,count,list);box.append(card);
+  }
+  return updateDataset('explorar','exponentes',top.filter(x=>x.best.length).map(({g,best:[p]})=>({PC1:p.PC1,PC2:p.PC2,nombre:p.nombre,superficie_nombre:p.superficie_nombre,grupo_nombre:g.nombre,clave:p.clave,etiqueta:p.nombre+' ('+SUP_SHORT[p.superficie]+')'})));
+}
+// Elegir un perfil desde los exponentes: si los filtros lo ocultan, se limpian grupo y búsqueda.
+function pickProfile(clave){if(!filtered.some(p=>p.clave===clave)){$('style').value='Todos';$('search').value='';filterProfiles();}$('profile-select').value=clave;showDetail();$('detail').scrollIntoView({behavior:'smooth',block:'nearest'});}
 function filterProfiles(){
-  const surface=$('surface').value,style=$('style').value,min=+$('minimum').value,search=$('search').value.toLocaleLowerCase();
+  const surface=$('surface').value,style=$('style').value,min=+$('minimum').value,search=$('search').value.toLocaleLowerCase(),key='g'+currentK;
   text('minimum-output',min);
-  filtered=data.profiles.filter(p=>(surface==='Todas'||p.superficie===surface)&&(style==='Todos'||p.estilo===style)&&p.partidos>=min&&p.nombre.toLocaleLowerCase().includes(search));
-  views.explorar.signal('superficie',surface).signal('estiloFiltro',style).signal('minPartidos',min).signal('busqueda',$('search').value).runAsync();
+  filtered=data.profiles.filter(p=>(surface==='Todas'||p.superficie===surface)&&(style==='Todos'||p[key]===style)&&p.partidos>=min&&p.nombre.toLocaleLowerCase().includes(search));
+  views.explorar.signal('superficie',surface).signal('estiloFiltro',style).signal('minPartidos',min).signal('busqueda',$('search').value).signal('kGrupos',currentK).runAsync();
+  updateLeaders();
   text('filtered-count',fmt(filtered.length)+' de '+fmt(data.profiles.length)+' perfiles'+(!filtered.length?' · No hay coincidencias. Probá reducir los filtros.':''));
   const select=$('profile-select'),old=select.value;select.replaceChildren();
   filtered.slice().sort((a,b)=>a.nombre.localeCompare(b.nombre)).forEach(p=>select.add(option(p.clave,p.nombre+' · '+p.superficie_nombre)));
@@ -75,10 +116,54 @@ function filterProfiles(){
 function showDetail(){
   const p=data.profiles.find(p=>p.clave===$('profile-select').value),target=$('detail');target.replaceChildren();if(!p){target.textContent='No hay un perfil seleccionado.';return;}
   const title=document.createElement('strong');title.textContent='El modelo lo asigna a: '+p.estilo;target.append(title);
+  if(currentK!==3){const g=kGroups().find(g=>g.id===p['g'+currentK]);const e=document.createElement('p');e.textContent='Con k = '+currentK+', está en el grupo «'+(g?g.nombre:'—')+'».';target.append(e);}
   for(const t of [fmt(p.partidos)+' partidos · '+pct(p.winrate)+' de victorias históricas','Silhouette individual: '+fmt(p.silhouette,3)+' · Distancia al centro: '+fmt(p.distancia,2)]){const e=document.createElement('p');e.textContent=t;target.append(e);}
 }
 function fillModel(values){for(const c of data.model.columns)$('rate-'+c).value=(values[c]*100).toFixed(6);}
-function defaults(){fillModel(data.model.means[$('model-surface').value]);updateRangeHints();runModel();}
+function defaults(){modelSource=null;$('model-player').value='';text('model-player-hint',PLAYER_HINT);fillPlayerList();fillModel(data.model.means[$('model-surface').value]);updateRangeHints();runModel();}
+// «Jugadores parecidos»: los 5 perfiles reales más cercanos al perfil cargado, con la misma distancia de siete rasgos que usa el modelo.
+const PLAYER_HINT='Carga sus tasas en esta superficie. Después podés cambiarlas.';
+const STYLE_MARK={'Sacadores de potencia':['●','#E69F00'],'Restadores sólidos':['■','#56B4E9'],'Saque frágil':['▲','#009E73']};
+let modelSource=null,similar=[],similarState=null;
+function projectPCA(z){const m=data.model;return m.pca_components.map(w=>w.reduce((s,v,j)=>s+v*(z[j]-m.pca_mean[j]),0));}
+function nearestProfiles(surface,z,exclude,k=5){const cols=data.model.columns;return data.profiles.filter(p=>p.superficie===surface&&p.clave!==exclude).map(p=>({p,d:Math.sqrt(cols.reduce((s,c,j)=>s+(p[c+'_z']-z[j])**2,0))})).sort((a,b)=>a.d-b.d).slice(0,k);}
+function fillPlayerList(){const s=$('model-surface').value;$('model-players').replaceChildren(...data.profiles.filter(p=>p.superficie===s).sort((a,b)=>a.nombre.localeCompare(b.nombre,'es')).map(p=>option(p.nombre,fmt(p.partidos)+' partidos · '+p.estilo)));}
+function loadPlayer(p){$('model-surface').value=p.superficie;fillPlayerList();$('model-player').value=p.nombre;text('model-player-hint',PLAYER_HINT);fillModel(p);modelSource=p.clave;updateRangeHints();return runModel();}
+function pickPlayer(){
+  const name=$('model-player').value.trim().toLocaleLowerCase();if(!name)return;
+  const p=data.profiles.find(p=>p.superficie===$('model-surface').value&&p.nombre.toLocaleLowerCase()===name);
+  if(p)loadPlayer(p);else text('model-player-hint','No hay un perfil con ese nombre en '+data.model.surfaces[$('model-surface').value].toLocaleLowerCase()+'. Elegí uno de la lista.');
+}
+function styleMark(estilo){const [mark,color]=STYLE_MARK[estilo]||['•','#526C64'],e=document.createElement('span');e.className='style-mark';e.style.color=color;e.textContent=mark;e.setAttribute('aria-hidden','true');return e;}
+async function showSimilar(r,values){
+  const s=$('model-surface').value,src=modelSource&&data.profiles.find(p=>p.clave===modelSource),you=src?src.nombre:'Tu perfil';
+  similar=nearestProfiles(s,r.z,modelSource);similarState={r,s,you,values,pc:projectPCA(r.z)};
+  text('similar-title',src?'Los 5 jugadores más parecidos a '+src.nombre:'Los 5 jugadores más parecidos a tu perfil');
+  text('similar-intro','Se comparan los siete rasgos estandarizados contra los '+fmt(data.profiles.filter(p=>p.superficie===s).length)+' perfiles de '+data.model.surfaces[s].toLocaleLowerCase()+(src?' (sin contar al propio '+src.nombre+')':'')+'. Cuanto menor la distancia, más parecidos. Tocá un jugador para compararlo.');
+  $('similar-list').replaceChildren(...similar.map(({p,d},i)=>{
+    const li=document.createElement('li'),b=document.createElement('button'),rank=document.createElement('span'),who=document.createElement('span'),name=document.createElement('strong'),meta=document.createElement('small'),dist=document.createElement('span');
+    b.type='button';b.className='similar-item';b.setAttribute('aria-pressed','false');b.addEventListener('click',()=>selectSimilar(i));
+    rank.className='similar-rank';rank.textContent=i+1;name.textContent=p.nombre;meta.append(styleMark(p.estilo),' '+p.estilo+' · '+fmt(p.partidos)+' partidos');who.className='similar-who';who.append(name,meta);
+    dist.className='similar-dist';dist.textContent=fmt(d,2);dist.title='Distancia en los siete rasgos';
+    b.append(rank,who,dist);li.append(b);return li;}));
+  await selectSimilar(0);
+}
+async function selectSimilar(i){
+  if(!similarState||!similar[i])return;
+  const {r,s,you,values,pc}=similarState,{p,d}=similar[i],cols=data.model.columns,label=c=>data.model.labels[c];
+  $('similar-list').querySelectorAll('.similar-item').forEach((b,k)=>b.setAttribute('aria-pressed',String(k===i)));
+  text('similar-pair',you+' vs. '+p.nombre);
+  const gaps=cols.map((c,j)=>({c,g:Math.abs(p[c+'_z']-r.z[j])})).sort((a,b)=>a.g-b.g),far=gaps[gaps.length-1].c;
+  const same=p.estilo===r.name?'Los dos quedan en «'+r.name+'».':p.nombre+' quedó en «'+p.estilo+'» y '+(you==='Tu perfil'?'tu perfil':you)+' en «'+r.name+'»: están cerca, pero de distintos lados de la frontera entre estilos.';
+  text('similar-reading','Distancia '+fmt(d,2)+'. Se parecen sobre todo en '+label(gaps[0].c).toLocaleLowerCase()+' y '+label(gaps[1].c).toLocaleLowerCase()+'. Donde más se separan es en '+label(far).toLocaleLowerCase()+': '+pct(values[far])+' contra '+pct(p[far])+'. '+same);
+  text('similar-col-you',you);text('similar-col-them',p.nombre);
+  fillTable('similar-body',cols.map(c=>[label(c),pct(values[c]),pct(p[c])]));
+  await updateDataset('parecidos-rasgos','rasgos_parecido',cols.flatMap((c,j)=>[{rasgo:label(c),z:r.z[j],serie:you,marca:'Tu perfil',tasa:values[c]},{rasgo:label(c),z:p[c+'_z'],serie:p.nombre,marca:p.estilo,tasa:p[c]}]));
+  views['parecidos-pca'].signal('supParecidos',s);
+  await updateDataset('parecidos-pca','pca_parecidos',[{tipo:'Tu perfil',PC1:pc[0],PC2:pc[1],etiqueta:you,estilo:r.name,distancia:0},
+    ...similar.map((x,k)=>({tipo:k===i?'Elegido':'Parecido',PC1:x.p.PC1,PC2:x.p.PC2,PC1_tu:pc[0],PC2_tu:pc[1],etiqueta:x.p.nombre,estilo:x.p.estilo,distancia:x.d}))]);
+}
+async function clearSimilar(){similar=[];similarState=null;$('similar-list').replaceChildren();text('similar-pair','');text('similar-reading','');fillTable('similar-body',[]);await updateDataset('parecidos-rasgos','rasgos_parecido',[]);await updateDataset('parecidos-pca','pca_parecidos',[]);}
 function updateRangeHints(){const s=$('model-surface').value;for(const c of data.model.columns){const [lo,hi]=data.model.ranges[s][c];text('range-'+c,'Observado: '+pct(lo)+'–'+pct(hi));}}
 async function runModel(event){
   if(event)event.preventDefault();
@@ -91,7 +176,8 @@ async function runModel(event){
     $('warning').hidden=!warnings.length;text('warning',warnings.join(' '));
     await updateDataset('distancias','distancias',r.distances.map((d,i)=>({estilo:data.model.names[i],distancia:d})));
     await updateDataset('comparacion','comparacion',data.model.columns.flatMap((c,j)=>[{rasgo:data.model.labels[c],z:r.z[j],serie:'Tu perfil',marca:'Tu perfil'},{rasgo:data.model.labels[c],z:data.model.centers[r.index][j],serie:'Centro asignado',marca:r.name}]));
-  }catch(e){text('prediction','Revisá los valores');text('explanation','');text('warning',e.message);$('warning').hidden=false;await updateDataset('distancias','distancias',[]);await updateDataset('comparacion','comparacion',[]);}
+    await showSimilar(r,values);
+  }catch(e){text('prediction','Revisá los valores');text('explanation','');text('warning',e.message);$('warning').hidden=false;await updateDataset('distancias','distancias',[]);await updateDataset('comparacion','comparacion',[]);await clearSimilar();}
 }
 function setupPredictor(){
   const select=$('match-select');
@@ -336,6 +422,9 @@ async function main(){
   text('pc1-var',pct(data.stats.pca[0]));text('pc2-var',pct(data.stats.pca[1]));
   const ks=data.stats.k_selection,kRow=k=>ks.filas.find(f=>f.k===k);
   if($('k-body')){$('k-body').replaceChildren(...ks.filas.map(f=>{const tr=document.createElement('tr');if(f.k===ks.elegido)tr.className='chosen';for(const v of [f.k+(f.k===ks.elegido?' · elegido':''),fmt(f.silhouette,2),fmt(f.ari,2)]){const td=document.createElement('td');td.textContent=v;tr.append(td);}return tr;}));}
+  // Tabla del jugador típico de cada estilo (reemplaza al gráfico de puntos): azul por encima del promedio, rojo por debajo; más intenso cuanto más lejos.
+  const styleOrder=['Sacadores de potencia','Restadores sólidos','Saque frágil'];
+  if($('centros-body')){$('centros-body').replaceChildren(...data.stats.style_profile.map(r=>{const tr=document.createElement('tr');const th=document.createElement('th');th.scope='row';th.textContent=r.rasgo;tr.append(th);for(const e of styleOrder){const td=document.createElement('td');td.textContent=(r[e]>0?'+':'')+fmt(r[e],2);const v=r[e];td.className=(v>=0?'pos':'neg')+(Math.abs(v)>=.5?' strong':'');td.style.setProperty('--tint',Math.round(Math.min(Math.abs(v),1)*48)+'%');tr.append(td);}return tr;}));}
   text('k2-sil',fmt(kRow(2).silhouette,2));text('k3-sil',fmt(kRow(3).silhouette,2));text('k3-ari',fmt(kRow(3).ari,2));text('k4-ari',fmt(kRow(4).ari,2));
   // «¿Qué es un perfil?»: los tres perfiles de Nadal salen de los datos, no del texto.
   for(const p of data.profiles.filter(p=>p.nombre==='Rafael Nadal')){const k='nadal-'+p.superficie+'-';text(k+'partidos',fmt(p.partidos));text(k+'aces',pct(p.tasa_aces));text(k+'resto',pct(p.puntos_ganados_resto));text(k+'estilo',p.estilo);}
@@ -347,21 +436,35 @@ async function main(){
   text('hero-rank',pct(r.metrics['Ranking + contexto'].accuracy,1));text('hero-style',pct(r.metrics['Ranking + contexto + estilos'].accuracy,1));text('hero-matches',fmt(r.counts.test));
   const heroRate=c=>r.association_rank.find(x=>x.condicion===c&&x.estilo==='Restadores sólidos').winrate;text('hero-fav',pct(heroRate('Llega como mejor rankeado'),0));
   const favRate=e=>r.association_rank.find(x=>x.condicion==='Llega como mejor rankeado'&&x.estilo===e).winrate;text('hero-fav-power',pct(favRate('Sacadores de potencia'),1));text('hero-fav-fragile',pct(favRate('Saque frágil'),1));
+  // Sección 04 «¿Hay un estilo superior?»: todos los números salen del informe de la Entrega 3.
+  const SUP_COND={all:'Todos sus partidos',fav:'Llega como mejor rankeado',dog:'Llega como peor rankeado'},SUP_PLAIN={'Todos sus partidos':'Todos sus partidos','Llega como mejor rankeado':'Llega como favorito','Llega como peor rankeado':'Llega como no favorito'};
+  document.querySelectorAll('[data-win]').forEach(el=>{const [c,e]=el.dataset.win.split('|');const row=r.association_rank.find(x=>x.condicion===SUP_COND[c]&&x.estilo===e);const d=el.dataset.digits;el.textContent=d===undefined?pct(row.winrate,1):fmt(row.winrate*100,+d);});
+  document.querySelectorAll('[data-ci]').forEach(el=>{const [c,e,k]=el.dataset.ci.split('|');el.textContent=pct(r.association_rank.find(x=>x.condicion===SUP_COND[c]&&x.estilo===e)[k],1);});
+  // Sección 05 «¿Predice mejor que el ranking?»: cada número dice de qué campo del informe sale (data-rep) y cómo se escribe (data-fmt).
+  const REP_FMT={int:v=>fmt(v),pct1:v=>pct(v,1),dec4:v=>fmt(v,4),pp2:v=>fmt(v*100,2)};
+  document.querySelectorAll('[data-rep]').forEach(el=>{const v=el.dataset.rep.split('.').reduce((o,k)=>o==null?o:o[k],r);if(typeof v==='number')el.textContent=REP_FMT[el.dataset.fmt](v);});
+  fillTable('pred-test-body',[['Elegir siempre al mejor rankeado','Gana el mejor rankeado'],['Ranking + contexto','Ranking + contexto'],['Ranking + contexto + estilos','Ranking + contexto + estilos'],['Tirar una moneda (50 %)','Azar 50/50']].map(([label,key])=>{const m=r.metrics[key];return [label,pct(m.accuracy,2),m.log_loss===null?'—':fmt(m.log_loss,4)];}));
+  const supApps=r.association_rank.filter(x=>x.condicion==='Todos sus partidos').reduce((t,x)=>t+x.n,0);
+  document.querySelectorAll('[data-sup]').forEach(el=>{el.textContent=fmt(el.dataset.sup==='partidos'?r.counts.test:supApps);});
+  fillTable('sup-body',r.association_rank.map(x=>[SUP_PLAIN[x.condicion],x.estilo,fmt(x.n),pct(x.winrate,1),pct(x.lower,1)+' a '+pct(x.upper,1)]));
   const flips=r.favorite_changes;text('flip-count',fmt(flips.changed));text('flip-rank',fmt(flips.ranking_right));text('flip-style',fmt(flips.styles_right));
   text('win-return',pct(r.association.find(x=>x.surface==='Todas'&&x.estilo==='Restadores sólidos').winrate));text('best-return',pct(r.best_ranked_share['Restadores sólidos']));text('best-fragile',pct(r.best_ranked_share['Saque frágil']));
   text('delta-accuracy',fmt(r.comparison.delta_accuracy*100,2)+' puntos porcentuales');text('delta-ci',r.comparison.accuracy_ci95.map(x=>fmt(x*100,2)).join(' a ')+' puntos porcentuales');
   const all=r.association.filter(x=>x.surface==='Todas');text('win-summary',all.map(x=>x.estilo+': '+pct(x.winrate)+' ('+fmt(x.n)+' participaciones)').join(' · '));
-  await Promise.all(['calidad','relacion','mapa','grupos','explorar','centros','distancias','comparacion','victorias','rendimiento','calibracion','coeficientes','ganador','enfrentamiento','rasgos-enfrentamiento'].map(embed));
+  await Promise.all(['calidad','relacion','mapa','grupos','explorar','distancias','comparacion','favoritos','superior','victorias','rendimiento','calibracion','coeficientes','ganador','enfrentamiento','rasgos-enfrentamiento','parecidos-rasgos','parecidos-pca'].map(embed));
   setupHeightToggle();
   // Los gráficos en detalles cerrados se redimensionan al abrirse.
   document.querySelectorAll('details').forEach(d=>d.addEventListener('toggle',()=>{if(d.open)requestAnimationFrame(refit);}));
   views.explorar.addEventListener('click',(_,item)=>{const clave=item&&item.datum&&item.datum.clave;if(clave&&filtered.some(p=>p.clave===clave)){$('profile-select').value=clave;showDetail();}});
   for(const id of ['surface','style','minimum','search'])$(id).addEventListener('input',filterProfiles);
-  $('reset').addEventListener('click',()=>{$('surface').value='Todas';$('style').value='Todos';$('minimum').value=20;$('search').value='';filterProfiles();});
+  $('reset').addEventListener('click',()=>{$('surface').value='Todas';$('style').value='Todos';$('minimum').value=20;$('search').value='';setK(3);});
   $('profile-select').addEventListener('change',showDetail);
   for(const c of data.model.columns){const label=document.createElement('label');label.textContent=data.model.labels[c]+' (%)';const input=document.createElement('input');input.id='rate-'+c;input.type='number';input.min=0;input.max=100;input.step='any';input.required=true;const hint=document.createElement('small');hint.id='range-'+c;label.append(input,hint);$('model-inputs').append(label);}
-  $('model-form').addEventListener('submit',runModel);$('model-surface').addEventListener('change',defaults);$('model-reset').addEventListener('click',defaults);
-  $('use-profile').addEventListener('click',()=>{const p=data.profiles.find(p=>p.clave===$('profile-select').value);if(p){$('model-surface').value=p.superficie;fillModel(p);updateRangeHints();runModel();$('modelo').scrollIntoView({behavior:'smooth'});}});
-  filterProfiles();defaults();setupPredictor();setupMatchups();text('estado','');
+  $('model-form').addEventListener('submit',runModel);$('model-player').addEventListener('change',pickPlayer);$('model-player').addEventListener('input',()=>{if(data.profiles.some(p=>p.superficie===$('model-surface').value&&p.nombre===$('model-player').value))pickPlayer();});
+  $('model-inputs').addEventListener('input',()=>{if(!modelSource)return;const p=data.profiles.find(p=>p.clave===modelSource);modelSource=null;text('model-player-hint','Partiste de '+p.nombre+' y cambiaste tasas: ahora es un perfil propio. Volvé a «Asignar estilo».');});
+  $('model-surface').addEventListener('change',defaults);$('model-reset').addEventListener('click',defaults);
+  $('use-profile').addEventListener('click',()=>{const p=data.profiles.find(p=>p.clave===$('profile-select').value);if(p){loadPlayer(p);$('modelo').scrollIntoView({behavior:'smooth'});}});
+  text('similar-pca-share',pct(data.stats.pca[0]+data.stats.pca[1],0));
+  setupK();filterProfiles();defaults();setupPredictor();setupMatchups();text('estado','');
 }
 main().catch(error=>{text('estado','No se pudo iniciar la aplicación: '+error.message+'. Recargá la página o ejecutala mediante un servidor HTTP.');console.error(error);});
