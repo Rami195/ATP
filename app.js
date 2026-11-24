@@ -287,12 +287,58 @@ function showEvidence(r){
   text('delta-loss',fmt(r.comparison.delta_log_loss,5));text('delta-loss-ci',r.comparison.log_loss_ci95.map(x=>fmt(x,5)).join(' a '));
   text('rely-full',fmt(r.reliance.completo,4));text('rely-no-rank',fmt(r.reliance.sin_ranking,4));text('rely-no-style',fmt(r.reliance.sin_estilos,4));
 }
+// Sección 01: de los partidos descargados a los perfiles. Cada flecha es un filtro.
+function renderDataFlow(){
+  const s=data.stats,list=$('data-flow');if(!list)return;
+  const minus=(n,what)=>'− '+fmt(n)+' '+what;
+  const steps=[
+    {stage:'Descarga · Entrega 1',n:s.source_matches,unit:'partidos',label:'temporadas 2000–2025',kind:'match'},
+    {arrow:minus(s.duplicate_matches,'partidos repetidos')},
+    {stage:'Limpieza en el DAG',n:s.unique_matches,unit:'partidos',label:'sin repetidos',kind:'match'},
+    {arrow:minus(s.carpet_matches,'de Carpet, una superficie que dejó de usarse, y ')+fmt(s.no_surface_matches)+' sin superficie'},
+    {n:s.surface_matches,unit:'partidos',label:'en cemento, polvo de ladrillo y césped',kind:'match'},
+    {arrow:'contamos quién jugó esos partidos',type:'change'},
+    {n:s.source_players,unit:'jugadores',label:'distintos',kind:'player'},
+    {arrow:minus(s.source_players-s.silver_players,'con menos de 3 partidos o sin estadísticas válidas')},
+    {stage:'El Silver',n:s.silver_players,unit:'jugadores',label:'con sus tasas de saque y resto por superficie',kind:'player'},
+    {arrow:'cada jugador se cruza con las tres superficies: cemento, polvo de ladrillo y césped',type:'grow'},
+    {stage:'Los perfiles',n:s.candidate_profiles,unit:'combinaciones',label:'jugador–superficie',kind:'profile'},
+    {arrow:minus(s.candidate_profiles-s.played_profiles,'en superficies donde nunca jugó')},
+    {n:s.played_profiles,unit:'combinaciones',label:'con al menos un partido',kind:'profile'},
+    {arrow:minus(s.played_profiles-s.enough_matches_profiles,'con menos de 20 partidos: sus valores son extremos (H1)')},
+    {n:s.enough_matches_profiles,unit:'combinaciones',label:'con 20 partidos o más',kind:'profile'},
+    {arrow:minus(s.enough_matches_profiles-s.n,'con estadísticas en menos del 80 % de sus partidos')},
+    {n:s.n,unit:'perfiles',label:'los que analiza esta página',kind:'profile',final:true}];
+  list.replaceChildren(...steps.map(st=>{
+    const li=document.createElement('li');
+    if(st.arrow){li.className='flow-arrow '+(st.type||'cut');li.setAttribute('aria-label','Filtro: '+st.arrow);const i=document.createElement('span');i.className='flow-icon';i.setAttribute('aria-hidden','true');i.textContent=st.type==='grow'?'×3':'↓';const t=document.createElement('span');t.textContent=st.arrow;li.append(i,t);return li;}
+    li.className='flow-step '+st.kind+(st.final?' final':'');
+    if(st.stage){const tag=document.createElement('span');tag.className='flow-stage';tag.textContent=st.stage;li.append(tag);}
+    const txt=document.createElement('p');txt.className='flow-text';const b=document.createElement('strong');b.textContent=fmt(st.n)+' '+st.unit;txt.append(b,' '+st.label);
+    li.append(txt);return li;}));
+}
+// Sección 02: «Pintar por altura» prende el parámetro pintarAltura del gráfico Altair y muestra su leyenda.
+function setupHeightToggle(){
+  const h=data.stats.height,button=$('paint-height'),legend=$('height-legend');
+  if(!h||!button||!views.relacion)return;
+  text('height-n',fmt(h.n));text('height-aces',fmt(h.aces,2));text('height-resto',fmt(h.resto,2));
+  legend.replaceChildren(...h.bands.map(b=>{const li=document.createElement('li'),dot=document.createElement('span');dot.style.background=b.color;li.append(dot,b.rango+' · '+fmt(b.n));return li;}));
+  button.addEventListener('click',()=>{const on=button.getAttribute('aria-pressed')!=='true';button.setAttribute('aria-pressed',String(on));legend.hidden=!on;views.relacion.signal('pintarAltura',on).runAsync();});
+}
 async function main(){
   [data,predictive,matchupCatalog]=await Promise.all([json('datos.json'),json('prediccion.json'),json('enfrentamientos.json')]);
   document.querySelectorAll('[data-stat]').forEach(e=>e.textContent=fmt(data.stats[e.dataset.stat],e.dataset.stat==='silhouette'?3:0));
   document.querySelectorAll('.corr').forEach(e=>e.textContent=fmt(data.stats.correlation,2));text('corr-raw',fmt(data.stats.correlation_raw,2));text('low-sil',fmt(data.stats.below025*100));text('pca-total',fmt((data.stats.pca[0]+data.stats.pca[1])*100,1));
   text('hero-sil',fmt(data.stats.silhouette,2));
   for(const [id,name] of [['hero-power','Sacadores de potencia'],['hero-return','Restadores sólidos'],['hero-fragile','Saque frágil']])text(id,fmt(data.stats.counts[name]));
+  renderDataFlow();
+  // Sección 03: ejes del PCA y el barrido de k de la Entrega 3.
+  text('pc1-var',pct(data.stats.pca[0]));text('pc2-var',pct(data.stats.pca[1]));
+  const ks=data.stats.k_selection,kRow=k=>ks.filas.find(f=>f.k===k);
+  if($('k-body')){$('k-body').replaceChildren(...ks.filas.map(f=>{const tr=document.createElement('tr');if(f.k===ks.elegido)tr.className='chosen';for(const v of [f.k+(f.k===ks.elegido?' · elegido':''),fmt(f.silhouette,2),fmt(f.ari,2)]){const td=document.createElement('td');td.textContent=v;tr.append(td);}return tr;}));}
+  text('k2-sil',fmt(kRow(2).silhouette,2));text('k3-sil',fmt(kRow(3).silhouette,2));text('k3-ari',fmt(kRow(3).ari,2));text('k4-ari',fmt(kRow(4).ari,2));
+  // «¿Qué es un perfil?»: los tres perfiles de Nadal salen de los datos, no del texto.
+  for(const p of data.profiles.filter(p=>p.nombre==='Rafael Nadal')){const k='nadal-'+p.superficie+'-';text(k+'partidos',fmt(p.partidos));text(k+'aces',pct(p.tasa_aces));text(k+'resto',pct(p.puntos_ganados_resto));text(k+'estilo',p.estilo);}
   text('count-power',fmt(data.stats.counts['Sacadores de potencia']));text('count-return',fmt(data.stats.counts['Restadores sólidos']));text('count-fragile',fmt(data.stats.counts['Saque frágil']));
   text('surface-counts',Object.entries(data.stats.surface_counts).map(([s,n])=>fmt(n)+' en '+data.model.surfaces[s].toLocaleLowerCase()).join(', '));
   text('audit-note',data.stats.source_differences+' tasas de '+data.stats.profiles_source_differences+' perfiles difieren del Silver local. Los gráficos de estilos conservan la instantánea guardada en E3 (Z y escalador exacto). El análisis predictivo se reconstruye desde partidos.');
@@ -305,7 +351,8 @@ async function main(){
   text('win-return',pct(r.association.find(x=>x.surface==='Todas'&&x.estilo==='Restadores sólidos').winrate));text('best-return',pct(r.best_ranked_share['Restadores sólidos']));text('best-fragile',pct(r.best_ranked_share['Saque frágil']));
   text('delta-accuracy',fmt(r.comparison.delta_accuracy*100,2)+' puntos porcentuales');text('delta-ci',r.comparison.accuracy_ci95.map(x=>fmt(x*100,2)).join(' a ')+' puntos porcentuales');
   const all=r.association.filter(x=>x.surface==='Todas');text('win-summary',all.map(x=>x.estilo+': '+pct(x.winrate)+' ('+fmt(x.n)+' participaciones)').join(' · '));
-  await Promise.all(['calidad','relacion','grupos','explorar','centros','distancias','comparacion','victorias','rendimiento','calibracion','coeficientes','ganador','enfrentamiento','rasgos-enfrentamiento'].map(embed));
+  await Promise.all(['calidad','relacion','mapa','grupos','explorar','centros','distancias','comparacion','victorias','rendimiento','calibracion','coeficientes','ganador','enfrentamiento','rasgos-enfrentamiento'].map(embed));
+  setupHeightToggle();
   // Los gráficos en detalles cerrados se redimensionan al abrirse.
   document.querySelectorAll('details').forEach(d=>d.addEventListener('toggle',()=>{if(d.open)requestAnimationFrame(refit);}));
   views.explorar.addEventListener('click',(_,item)=>{const clave=item&&item.datum&&item.datum.clave;if(clave&&filtered.some(p=>p.clave===clave)){$('profile-select').value=clave;showDetail();}});

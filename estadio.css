@@ -186,6 +186,102 @@ html.anim .hero-art{animation:rise 1s .2s cubic-bezier(.2,.7,.2,1) both}
 .metrics span span{display:inline;font-size:inherit;color:inherit;line-height:inherit}
 /* En pantallas angostas, las tres tarjetas de la portada van una debajo de la otra. */
 @media(max-width:700px){.metrics{grid-template-columns:1fr}.metrics>div,.metrics>div:first-child{padding:16px 6px;border-right:0;border-bottom:1px solid rgba(255,255,255,.12)}.metrics>div:last-child{border-bottom:0}.metrics strong{font-size:34px}.metrics span{font-size:13px}}
+/* ---------- Portada: los tres hallazgos al lado del título y la canchita abajo, como guía de lectura ---------- */
+.hero{align-items:center}
+.hero .metrics{grid-column:auto;grid-template-columns:1fr;margin-top:0;padding:30px 30px 14px;align-self:center}
+.metrics-title{margin:0 0 4px;font-size:11px;font-weight:800;letter-spacing:3px;color:var(--ball)}
+.hero .metrics>div,.hero .metrics>div:first-child{padding:16px 0;border-right:0;border-bottom:1px solid rgba(255,255,255,.12)}
+.hero .metrics>div:last-child{border-bottom:0}
+.metric-q{margin:0 0 4px;font-size:12px;font-weight:700;letter-spacing:.5px;color:#fff;text-transform:uppercase}
+.hero .metrics strong{font-size:56px;line-height:1.1;display:inline-flex;margin:0 26px 0 0}
+.hero .metrics strong+strong{margin-top:0}
+.hero .metrics strong small{font-size:15px;max-width:250px}
+/* La explicación de cada número se abre con un clic. */
+.hero .metrics details.metric-more{margin:8px 0 0;border:0;background:none;border-radius:0}
+.hero .metrics .metric-more>summary{display:inline-flex;align-items:center;gap:8px;padding:4px 12px 4px 4px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);color:#fff;font-size:12px;font-weight:600;list-style:none;cursor:pointer;transition:background .2s}
+.hero .metrics .metric-more>summary::-webkit-details-marker{display:none}
+.hero .metrics .metric-more>summary:hover{background:rgba(255,255,255,.16)}
+.hero .metrics .metric-more>summary:before{content:'+';width:20px;height:20px;display:grid;place-items:center;border-radius:50%;background:var(--ball);color:#10241f;font-size:15px;font-weight:800;line-height:1;box-shadow:none;transition:transform .3s}
+.hero .metrics .metric-more[open]>summary:before{transform:rotate(45deg)}
+.hero .metrics .metric-more>summary:after{content:none}
+.hero .metrics .metric-more>p{margin:10px 0 0;font-size:13px;line-height:1.55;color:rgba(255,255,255,.78);animation:drop-in .3s ease}
+.hero .metrics .metric-more p span{font-size:inherit;color:#fff;font-weight:600}
+.hero-art{grid-column:1/-1;min-height:0;flex-direction:row;align-items:center;gap:36px;padding:22px 28px;margin-bottom:10px}
+.hero-art .court{flex:0 0 300px;height:170px}
+.hero-art .court-dot{width:30px;height:30px;border-width:4px}
+.hero-art .court-dot.d3{width:30px;height:30px}
+.hero-art .court-label{font-size:8px;letter-spacing:2px;bottom:5%}
+.hero-art .hr{width:34px}
+@keyframes rally-y-small{0%{transform:translateY(0) scale(1);animation-timing-function:ease-out}50%{transform:translateY(-48px) scale(1.2);animation-timing-function:ease-in}100%{transform:translateY(0) scale(1)}}
+.hero-art .rb{width:16px;height:16px;top:-8px;animation-name:rally-x,rally-y-small}
+.art-info{flex:1;min-width:0}
+.art-info .art-caption{margin:0 0 6px;color:var(--ball);font-weight:800}
+.art-lead{margin:0 0 12px;font-size:15px;color:#fff}
+.art-legend{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.art-legend li{display:grid;grid-template-columns:30px 1fr;column-gap:10px;align-items:center}
+.art-legend li>span:first-child{grid-row:span 2;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#0b1a16;font-size:15px}
+.art-legend .power{color:#E69F00}.art-legend .return{color:#56B4E9}.art-legend .fragile{color:#2bd19f}
+.art-legend strong{color:#fff;font-size:14px;line-height:1.3}
+.art-legend li>span:last-child{font-size:12px;line-height:1.4;color:rgba(255,255,255,.78)}
+@media(max-width:900px){.hero{grid-template-columns:1fr}.art-legend{grid-template-columns:1fr;gap:10px}}
+@media(max-width:700px){.hero .metrics{padding:22px 18px 8px}.hero .metrics strong{font-size:44px;margin-right:18px}.hero .metrics strong small{font-size:14px}.hero-art{display:flex;flex-direction:column;align-items:stretch;gap:18px;padding:18px}.hero-art .court{flex:0 0 auto;height:160px}}
+/* ---------- 01 · Flujo de los datos: cada paso y, entre pasos, una flecha con el filtro ---------- */
+.data-flow{list-style:none;margin:20px 0 0;padding:0;max-width:820px}
+.flow-stage{display:block;margin:14px 0 4px;font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--own)}
+.flow-step:first-child .flow-stage{margin-top:0}
+.section-heading .flow-text{margin:0;padding:2px 0 2px 10px;font-size:14px;line-height:1.4}
+.section-heading .flow-text strong{font-size:18px;font-variant-numeric:tabular-nums;margin-right:4px;background:none;padding:0}
+.section-heading .flow-step.final .flow-text strong{font-size:20px;background:linear-gradient(transparent 62%,color-mix(in srgb,var(--ball) 75%,transparent) 62%);padding:0 2px}
+.flow-arrow{display:flex;align-items:center;gap:12px;padding:6px 0 6px 10px;font-size:13px;color:#9b3d2a}
+.flow-arrow.change{color:var(--muted)}
+.flow-arrow.grow{color:#2f6e2e;font-weight:600}
+.flow-icon{flex:none;width:26px;text-align:center;font-size:20px;font-weight:800;line-height:1}
+.flow-arrow.grow .flow-icon{font-size:14px}
+/* ---------- 01 · ¿Qué es un perfil? Nadal en las tres superficies ---------- */
+.profile-explainer{margin:34px 0 8px}
+.profile-explainer h3{font-family:var(--display);font-size:24px;letter-spacing:-.5px;margin:0 0 6px}
+.profile-explainer>p{max-width:760px;margin:0 0 18px}
+.profile-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.profile-card{margin:0;background:#fff;border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:0 12px 32px rgba(20,48,42,.08)}
+.profile-card img{display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:cover}
+.profile-card figcaption{padding:14px 16px 16px}
+.surface-chip{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:#fff;border-radius:999px;padding:3px 10px;margin-bottom:10px}
+.surface-chip.hard{background:#2a5f99}.surface-chip.clay{background:#b4532a}.surface-chip.grass{background:#2f6e2e}
+.profile-card dl{margin:0;display:grid;gap:4px}
+.profile-card dl div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dashed var(--line);padding:3px 0}
+.profile-card dt{font-size:13px;color:var(--muted)}
+.profile-card dd{margin:0;font-weight:700;font-variant-numeric:tabular-nums}
+.profile-style{margin:10px 0 0;font-size:13px;font-weight:700}
+.profile-explainer .caption{margin-top:12px}
+@media(max-width:850px){.profile-cards{grid-template-columns:1fr;max-width:460px}}
+/* ---------- 03 · Cómo armamos los grupos: cuatro pasos numerados ---------- */
+.group-step{margin:38px 0 0}
+.step-title{display:flex;align-items:center;gap:12px;font-family:var(--display);font-size:24px;letter-spacing:-.5px;margin:0 0 10px}
+.step-title span{flex:none;width:34px;height:34px;display:grid;place-items:center;border-radius:50%;background:var(--own);color:#fff;font-size:16px}
+.group-step>p,.group-step>ul{max-width:820px}
+.rate-chips{list-style:none;padding:0;display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
+.rate-chips li{background:#fff;border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:600}
+.k-table{max-width:520px}
+.k-table td:not(:first-child),.k-table th:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
+.k-table tr.chosen td{font-weight:800;background:color-mix(in srgb,var(--ball) 35%,#fff)}
+.group-step .chart-box{margin-top:16px}
+.group-step .style-notes{margin-top:18px}
+/* ---------- 02 · Botón «Pintar por altura» y la respuesta debajo del gráfico ---------- */
+.chart-tools{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;margin:0 0 12px}
+.toggle{display:inline-flex;align-items:center;gap:10px;font:inherit;font-size:14px;font-weight:700;color:var(--ink);background:#fff;border:1.5px solid #c9d3c3;border-radius:999px;padding:7px 16px 7px 8px;cursor:pointer;transition:background .2s,border-color .2s}
+.toggle:hover{border-color:var(--ink)}
+.toggle-dot{position:relative;width:34px;height:20px;border-radius:999px;background:#dfe5db;transition:background .2s}
+.toggle-dot:after{content:'';position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .2s}
+.toggle[aria-pressed=true]{background:#eaf1f9;border-color:#1F4E8C}
+.toggle[aria-pressed=true] .toggle-dot{background:#1F4E8C}
+.toggle[aria-pressed=true] .toggle-dot:after{transform:translateX(14px)}
+.height-legend{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--muted)}
+.height-legend li{display:flex;align-items:center;gap:6px}
+.height-legend span{width:12px;height:12px;border-radius:50%;flex:none}
+.answer{margin:22px 0 0;padding:18px 22px;background:#fff;border-left:5px solid var(--own);border-radius:0 16px 16px 0;box-shadow:0 10px 28px rgba(20,48,42,.06)}
+.answer p{margin:0 0 10px;max-width:820px}
+.answer p:last-child{margin-bottom:0}
+.answer-label{font-size:11px!important;font-weight:800;letter-spacing:2px;color:var(--own)}
 /* Debajo de las tres tarjetas: cómo se entrenó y un partido calculado paso a paso. */
 .decide-train{background:white;border:1px solid var(--line);border-radius:20px;padding:18px 22px 6px;margin:22px 0 0;box-shadow:0 12px 32px rgba(20,48,42,.06)}
 .decide-train h5{font-size:17px;margin:0 0 6px}
