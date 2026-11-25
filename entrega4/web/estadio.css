@@ -363,3 +363,6 @@ html.anim .hero-art{animation:rise 1s .2s cubic-bezier(.2,.7,.2,1) both}
 .similar-table td:not(:first-child),.similar-table th:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
 .similar-map{margin-top:26px;border-top:1px dashed var(--line);padding-top:18px}
 @media(max-width:850px){.similar{padding:20px 14px}.similar-layout{grid-template-columns:1fr;gap:22px}}
+
+/* Portada: el nombre de los restadores sólidos lleva el azul de su estilo. */
+.metrics strong small .hero-return{color:#56B4E9}
