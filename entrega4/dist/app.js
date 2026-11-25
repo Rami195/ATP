@@ -448,6 +448,8 @@ async function main(){
   document.querySelectorAll('[data-sup]').forEach(el=>{el.textContent=fmt(el.dataset.sup==='partidos'?r.counts.test:supApps);});
   fillTable('sup-body',r.association_rank.map(x=>[SUP_PLAIN[x.condicion],x.estilo,fmt(x.n),pct(x.winrate,1),pct(x.lower,1)+' a '+pct(x.upper,1)]));
   const flips=r.favorite_changes;text('flip-count',fmt(flips.changed));text('flip-rank',fmt(flips.ranking_right));text('flip-style',fmt(flips.styles_right));
+  // Bloque visual de los partidos en que los estilos cambian al favorito: anchos y cuentas salen del informe.
+  if($('flip-sliver')){$('flip-sliver').style.width=(flips.share*100)+'%';$('flip-bar-rank').style.width=(flips.ranking_right/flips.changed*100)+'%';$('flip-bar-style').style.width=(flips.styles_right/flips.changed*100)+'%';text('flip-same',fmt(r.counts.test-flips.changed));}
   text('win-return',pct(r.association.find(x=>x.surface==='Todas'&&x.estilo==='Restadores sólidos').winrate));text('best-return',pct(r.best_ranked_share['Restadores sólidos']));text('best-fragile',pct(r.best_ranked_share['Saque frágil']));
   text('delta-accuracy',fmt(r.comparison.delta_accuracy*100,2)+' puntos porcentuales');text('delta-ci',r.comparison.accuracy_ci95.map(x=>fmt(x*100,2)).join(' a ')+' puntos porcentuales');
   const all=r.association.filter(x=>x.surface==='Todas');text('win-summary',all.map(x=>x.estilo+': '+pct(x.winrate)+' ('+fmt(x.n)+' participaciones)').join(' · '));
