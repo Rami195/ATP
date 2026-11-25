@@ -97,7 +97,8 @@ function updateLeaders(){
     if(!best.length){const li=document.createElement('li');li.textContent='Ningún perfil con estos filtros.';list.append(li);}
     card.append(head,count,list);box.append(card);
   }
-  return updateDataset('explorar','exponentes',top.filter(x=>x.best.length).map(({g,best:[p]})=>({PC1:p.PC1,PC2:p.PC2,nombre:p.nombre,superficie_nombre:p.superficie_nombre,grupo_nombre:g.nombre,clave:p.clave,etiqueta:p.nombre+' ('+SUP_SHORT[p.superficie]+')'})));
+  // En el mapa, el círculo sólo aparece si su jugador cumple también los filtros de grupo y búsqueda.
+  return updateDataset('explorar','exponentes',top.filter(x=>x.best.length&&filtered.some(p=>p.clave===x.best[0].clave)).map(({g,best:[p]})=>({PC1:p.PC1,PC2:p.PC2,nombre:p.nombre,superficie_nombre:p.superficie_nombre,grupo_nombre:g.nombre,clave:p.clave,etiqueta:p.nombre+' ('+SUP_SHORT[p.superficie]+')'})));
 }
 // Elegir un perfil desde los exponentes: si los filtros lo ocultan, se limpian grupo y búsqueda.
 function pickProfile(clave){if(!filtered.some(p=>p.clave===clave)){$('style').value='Todos';$('search').value='';filterProfiles();}$('profile-select').value=clave;showDetail();$('detail').scrollIntoView({behavior:'smooth',block:'nearest'});}
